@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Protokół 116 → 90</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0a0a0a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Protokół" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<style>
+  :root{
+    --bg:#0a0a0a; --card:#161616; --card2:#1c1c1c; --bd:#262626;
+    --tx:#ececec; --mut:#8a8a8a; --mut2:#6a6a6a;
+    --amber:#f59e0b; --amber-l:#fbbf24; --indigo:#6366f1; --green:#10b981; --red:#ef4444;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; background:var(--bg); color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:max(16px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));}
+  .wrap{max-width:460px; margin:0 auto;}
+  .eyebrow{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0;}
+  h1{font-size:18px; margin:2px 0 0; font-weight:600;}
+  .card{background:var(--card); border:1px solid var(--bd); border-radius:18px; padding:18px; margin-top:14px;}
+  .label{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); margin:0;}
+  .mono{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .big{font-size:54px; line-height:1; font-weight:600; letter-spacing:-.02em;}
+  .sub{color:var(--mut); font-size:14px; margin-top:8px;}
+  .track{height:10px; border-radius:999px; background:#232323; overflow:hidden; margin-top:14px;}
+  .fill{height:100%; border-radius:999px; background:linear-gradient(90deg,#d97706,#fbbf24);}
+  .scale{display:flex; justify-content:space-between; font-size:11px; color:var(--mut2); margin-top:5px;}
+  .row{display:flex; align-items:flex-start; gap:12px; margin-top:10px;}
+  .ic{font-size:24px; line-height:1;}
+  .plan-name{font-weight:600; font-size:16px;}
+  .plan-det{color:var(--mut); font-size:13.5px; margin-top:3px;}
+  button.act{width:100%; border:0; border-radius:14px; padding:15px; font-size:15px; font-weight:600;
+    margin-top:14px; cursor:pointer; transition:.15s; color:var(--tx); background:#232323;}
+  button.act:active{background:#2c2c2c;}
+  button.act.done{background:var(--amber); color:#0a0a0a;}
+  button.sleep{margin-top:9px; padding:12px; font-size:14px; font-weight:500;}
+  button.sleep.on{background:var(--indigo); color:#0a0a0a;}
+  .week{display:flex; justify-content:space-between; margin-top:14px;}
+  .d{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .d .lab{font-size:11px; color:var(--mut);}
+  .d .lab.t{color:var(--amber);}
+  .dot{width:30px; height:30px; border-radius:999px; display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:600; border:1px solid #2f2f2f; color:#5a5a5a;}
+  .dot.t{border-color:var(--amber); color:var(--mut);}
+  .dot.on{background:var(--amber); color:#0a0a0a; border-color:var(--amber);}
+  .between{display:flex; align-items:center; justify-content:space-between;}
+  input[type=text]{flex:1; background:#232323; border:1px solid #2f2f2f; border-radius:12px;
+    padding:13px; color:var(--tx); font-size:16px; outline:none;}
+  input[type=text]:focus{border-color:var(--amber);}
+  .btn-sm{border:0; border-radius:12px; padding:0 18px; background:var(--amber); color:#0a0a0a;
+    font-weight:600; font-size:14px; cursor:pointer;}
+  .flex{display:flex; gap:8px; margin-top:14px;}
+  .metrics{display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; margin-top:14px;}
+  .m .mv{font-size:24px; font-weight:600;}
+  .m .ml{font-size:12px; color:var(--mut); margin-top:2px;}
+  .arrow{font-size:13px; margin-left:6px;}
+  .up{color:var(--green);} .down{color:var(--red);}
+  .tgt{display:flex; align-items:center; justify-content:space-between; padding:9px 0;}
+  .tgt+.tgt{border-top:1px solid #1f1f1f;}
+  .tgt .n{font-size:14px; font-weight:500;}
+  .tgt .note{font-size:12px; color:var(--mut2);}
+  .imp{display:block; text-align:center; border:1px dashed #3a3a3a; border-radius:14px; padding:14px;
+    color:var(--mut); font-size:14px; cursor:pointer; margin-top:14px;}
+  .imp b{color:var(--amber);}
+  .foot{text-align:center; color:var(--mut2); font-size:11px; margin-top:18px;}
+  .stamp{font-size:11px; color:var(--mut2); margin-top:10px;}
+  svg{display:block; width:100%;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<input type="file" id="csv" accept=".csv,text/csv" style="display:none" />
+
+<script>
+const START=116, GOAL=90;
+const PLAN={
+ 1:{n:"Zone 2 — orbitrek",d:"35 min · tętno 125–140 · oddech nosem",i:"🚴",k:"cardio"},
+ 2:{n:"Siła A — full body",d:"Przysiad goblet · wiosłowanie · wyciskanie · plank",i:"💪",k:"strength"},
+ 3:{n:"Zone 2 — bieżnia",d:"35 min · marsz pod górę lub trucht",i:"🏃",k:"cardio"},
+ 4:{n:"Siła B — full body",d:"Martwy ciąg RUM · wykrok · pompki · farmer",i:"💪",k:"strength"},
+ 5:{n:"Zone 2 — dowolnie",d:"35–40 min · spokojnie",i:"🚴",k:"cardio"},
+ 6:{n:"Długi marsz / Zone 2",d:"45–60 min · można rodzinnie",i:"🚶",k:"cardio"},
+ 0:{n:"Regeneracja",d:"Spacer z psami · mobilność · rozciąganie",i:"🧘",k:"rest"}
+};
+const WL=["Pn","Wt","Śr","Cz","Pt","So","Nd"];
+
+let log = load('fit-log-v1', {days:{},weights:{}});
+let gar = load('garmin-v1', null);
+
+function load(k,def){ try{const v=localStorage.getItem(k); return v?JSON.parse(v):def;}catch(e){return def;} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
+function key(d){d=new Date(d);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function monday(d){d=new Date(d);const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);d.setHours(0,0,0,0);return d;}
+function nz(a){return a.filter(x=>x!=null&&!isNaN(x));}
+function mean(a){a=nz(a);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null;}
+function r1(x){return x==null?"—":Math.round(x*10)/10;}
+
+function mergedWeights(){
+  const m={};
+  if(gar&&gar.rows){gar.rows.forEach(r=>{if(r.waga)m[r.data]=r.waga;});}
+  Object.entries(log.weights).forEach(([k,v])=>{m[k]=v;}); // ręczne nadpisują
+  return Object.entries(m).map(([k,v])=>({k,v})).sort((a,b)=>a.k<b.k?-1:1);
+}
+
+function spark(vals, color){
+  vals=nz(vals);
+  if(vals.length<2) return '<div class="sub">Za mało danych na wykres.</div>';
+  const w=300,h=64,p=8, mn=Math.min(...vals),mx=Math.max(...vals),sp=(mx-mn)||1;
+  const pts=vals.map((v,i)=>[p+i*(w-2*p)/(vals.length-1), p+(h-2*p)*(1-(v-mn)/sp)]);
+  const line=pts.map((q,i)=>(i?"L":"M")+q[0].toFixed(1)+","+q[1].toFixed(1)).join(" ");
+  const area=line+" L"+pts[pts.length-1][0].toFixed(1)+","+(h-p)+" L"+pts[0][0].toFixed(1)+","+(h-p)+" Z";
+  const last=pts[pts.length-1];
+  const id="g"+Math.random().toString(36).slice(2,7);
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:64px">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#${id})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5" fill="${color}"/></svg>`;
+}
+
+function garminCard(){
+  if(!gar||!gar.rows||!gar.rows.length) return "";
+  const rows=gar.rows;
+  const hrv=rows.map(r=>r.hrv), rhr=rows.map(r=>r.rhr), sen=rows.map(r=>r.sen), kr=rows.map(r=>r.kroki);
+  const last=(a)=>{for(let i=a.length-1;i>=0;i--)if(a[i]!=null&&!isNaN(a[i]))return a[i];return null;};
+  const tail=(a,n)=>nz(a).slice(-n);
+  const hrv7=mean(tail(hrv,7)), hrvPrev=mean(nz(hrv).slice(-14,-7));
+  const rhr7=mean(tail(rhr,7)), rhrPrev=mean(nz(rhr).slice(-14,-7));
+  const sen7=mean(tail(sen,7)), steps7=mean(tail(kr,7));
+  const senArr=tail(sen,14), senStd=senArr.length>1?Math.sqrt(mean(senArr.map(x=>Math.pow(x-mean(senArr),2)))):null;
+  const status=(function(){for(let i=rows.length-1;i>=0;i--)if(rows[i].status)return rows[i].status;return "";})();
+  const hrvTrend = (hrv7!=null&&hrvPrev!=null)? hrv7-hrvPrev : null;
+  const rhrTrend = (rhr7!=null&&rhrPrev!=null)? rhr7-rhrPrev : null;
+  const lastOf=(k)=>{for(let i=rows.length-1;i>=0;i--){const v=rows[i][k]; if(v!=null&&v!==""&&!isNaN(v))return +v;}return null;};
+  const spo2=lastOf("spo2"), spo2min=lastOf("spo2_min"), tnoc=lastOf("temp_noc");
+  const arr=(v,goodUp)=> v==null?"":(Math.abs(v)<0.3?"":`<span class="arrow ${ (v>0)===goodUp ?"up":"down"}">${v>0?"▲":"▼"}${Math.abs(v).toFixed(1)}</span>`);
+  const statusPL={BALANCED:"zrównoważone",UNBALANCED:"niezrównoważone",LOW:"niskie",POOR:"słabe"}[status]||status||"—";
+  return `<div class="card">
+    <p class="label">Regeneracja (z Garmina)</p>
+    <div class="metrics">
+      <div class="m"><div class="mv mono">${r1(hrv7)}<span style="font-size:13px;color:var(--mut)"> ms</span>${arr(hrvTrend,true)}</div><div class="ml">HRV nocne (śr. 7 dni)</div></div>
+      <div class="m"><div class="mv mono">${r1(rhr7)}<span style="font-size:13px;color:var(--mut)"> bpm</span>${arr(rhrTrend,false)}</div><div class="ml">Tętno spoczynkowe</div></div>
+      <div class="m"><div class="mv mono">${r1(sen7)}<span style="font-size:13px;color:var(--mut)"> h</span></div><div class="ml">Sen (śr. 7 dni)${senStd!=null?` · ±${r1(senStd)}h`:""}</div></div>
+      <div class="m"><div class="mv mono">${steps7!=null?Math.round(steps7).toLocaleString("pl-PL"):"—"}</div><div class="ml">Kroki (śr. 7 dni)</div></div>
+      ${spo2!=null?`<div class="m"><div class="mv mono">${r1(spo2)}<span style="font-size:13px;color:var(--mut)">%</span></div><div class="ml">SpO₂ we śnie${spo2min!=null?` · min ${r1(spo2min)}`:""}</div></div>`:""}
+      ${tnoc!=null?`<div class="m"><div class="mv mono">${r1(tnoc)}<span style="font-size:13px;color:var(--mut)">°C</span></div><div class="ml">Temp. w nocy</div></div>`:""}
+    </div>
+    <div style="margin-top:14px"><p class="label" style="margin-bottom:6px">HRV — 30 dni</p>${spark(nz(hrv).slice(-30),"#10b981")}</div>
+    <div class="sub">Status HRV: <b style="color:var(--tx)">${statusPL}</b></div>
+    <div class="stamp">${gar.source==="auto"?"Auto-aktualizacja":"Import"}: ${gar.importedAt? new Date(gar.importedAt).toLocaleString("pl-PL"):"—"} · ${rows.length} dni</div>
+  </div>`;
+}
+
+function render(){
+  const t=new Date(), tk=key(t), te=log.days[tk]||{}, pl=PLAN[t.getDay()];
+  const mw=mergedWeights();
+  const cur=mw.length?mw[mw.length-1].v:START;
+  const prog=Math.max(0,Math.min(100,(START-cur)/(START-GOAL)*100));
+  const toGoal=Math.round((cur-GOAL)*10)/10;
+  const mon=monday(t), wd=[...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+  const trained=wd.slice(0,6).filter(d=>(log.days[key(d)]||{}).trained).length;
+  const doneTxt = pl.k==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
+                                : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
+
+  document.getElementById("app").innerHTML = `
+    <p class="eyebrow">Protokół metaboliczny</p>
+    <h1>Faza 1 · Baza tlenowa</h1>
+
+    <div class="card">
+      <div class="big mono">${(Math.round(cur*10)/10).toFixed(1)}<span style="font-size:18px;color:var(--mut)"> kg</span></div>
+      <div class="sub">${toGoal>0?toGoal.toFixed(1)+" kg do celu 90":"cel osiągnięty 🎉"} · start 116</div>
+      <div class="track"><div class="fill" style="width:${prog}%"></div></div>
+      <div class="scale mono"><span>116</span><span>${Math.round(prog)}%</span><span>90</span></div>
+    </div>
+
+    <div class="card">
+      <p class="label">Dziś · ${WL[(t.getDay()+6)%7]}</p>
+      <div class="row"><div class="ic">${pl.i}</div><div><div class="plan-name">${pl.n}</div><div class="plan-det">${pl.d}</div></div></div>
+      <button class="act ${te.trained?"done":""}" data-x="trained">${doneTxt}</button>
+      <button class="act sleep ${te.sleptEarly?"on":""}" data-x="sleptEarly">${te.sleptEarly?"😴 W łóżku przed 22:00":"W łóżku przed 22:00?"}</button>
+    </div>
+
+    <div class="card">
+      <div class="between"><p class="label">Ten tydzień</p><p class="mono" style="color:var(--amber);margin:0;font-size:14px">${trained}/6</p></div>
+      <div class="week">${wd.map((d,i)=>{const e=log.days[key(d)]||{};const tn=key(d)===tk;
+        return `<div class="d"><span class="lab ${tn?"t":""}">${WL[i]}</span>
+          <div class="dot ${e.trained?"on":(tn?"t":"")}">${e.trained?"✓":""}</div></div>`;}).join("")}</div>
+    </div>
+
+    <div class="card">
+      <div class="between"><p class="label">Waga</p>${mw.length?`<p class="sub" style="margin:0">ost. ${r1(mw[mw.length-1].v)} kg</p>`:""}</div>
+      <div style="margin-top:12px">${spark(mw.slice(-20).map(p=>p.v),"#fbbf24")}</div>
+      <div class="flex">
+        <input type="text" id="w" inputmode="decimal" placeholder="np. 114,5" />
+        <button class="btn-sm" id="wsave">Zapisz</button>
+      </div>
+    </div>
+
+    ${garminCard()}
+
+    <label class="imp" id="impbtn">📥 ${gar?"Zaktualizuj dane z Garmina":"Importuj dane Garmina"} <b>(CSV)</b><br>
+      <span style="font-size:12px">plik garmin_export.csv z Colab</span></label>
+
+    <div class="card">
+      <p class="label">Cele fazy 1 (8–12 tyg.)</p>
+      <div class="tgt"><div><div class="n">TG / HDL</div><div class="note">główny licznik ryzyka</div></div><div class="mono" style="color:var(--mut)">8,1 <span style="color:var(--amber)">→ &lt;3</span></div></div>
+      <div class="tgt"><div><div class="n">HRV nocne</div><div class="note">odwrócić trend w górę</div></div><div class="mono" style="color:var(--mut)">~49 <span style="color:var(--amber)">→ 55+</span></div></div>
+      <div class="tgt"><div><div class="n">Kroki / dzień</div><div class="note">teraz ~5000</div></div><div class="mono" style="color:var(--mut)">5k <span style="color:var(--amber)">→ 7–8k</span></div></div>
+      <div class="tgt"><div><div class="n">VO2max</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">36 <span style="color:var(--amber)">→ 40</span></div></div>
+    </div>
+
+    <p class="foot">Dane zapisują się lokalnie na tym urządzeniu.</p>
+  `;
+
+  document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{
+    const f=b.getAttribute("data-x"); const e={...(log.days[tk]||{})}; e[f]=!e[f]; log.days[tk]=e; save("fit-log-v1",log); render();
+  });
+  const ws=document.getElementById("wsave"), wi=document.getElementById("w");
+  ws.onclick=()=>{const v=parseFloat((wi.value||"").replace(",",".")); if(!v||v<40||v>250)return; log.weights[tk]=Math.round(v*10)/10; save("fit-log-v1",log); render();};
+  wi.onkeydown=(e)=>{if(e.key==="Enter")ws.onclick();};
+  document.getElementById("impbtn").onclick=()=>document.getElementById("csv").click();
+}
+
+document.getElementById("csv").onchange=(ev)=>{
+  const f=ev.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const rows=parseCSV(rd.result);
+      if(!rows.length){alert("Nie znalazłem danych w pliku.");return;}
+      gar={importedAt:Date.now(), rows};
+      save("garmin-v1",gar); render();
+    }catch(e){ alert("Nie udało się wczytać pliku CSV."); }
+  };
+  rd.readAsText(f);
+};
+
+function parseCSV(text){
+  const lines=text.replace(/^\uFEFF/,"").trim().split(/\r?\n/);
+  const head=lines[0].split(",").map(h=>h.trim());
+  const ix={}; head.forEach((h,i)=>ix[h]=i);
+  const g=(c,k)=> ix[k]!=null ? (c[ix[k]]||"").trim() : "";
+  const out=[];
+  for(let i=1;i<lines.length;i++){
+    const c=lines[i].split(",");
+    const data=g(c,"data"); if(!data)continue;
+    out.push({
+      data,
+      waga: parseFloat(g(c,"waga_kg"))||null,
+      kroki: parseInt(g(c,"kroki"))||null,
+      rhr: parseFloat(g(c,"tetno_spocz"))||null,
+      hrv: parseFloat(g(c,"hrv_noc_ms"))||null,
+      sen: parseFloat(g(c,"sen_h"))||null,
+      status: g(c,"hrv_status")||"",
+      gotowosc: parseFloat(g(c,"gotowosc_tren"))||null
+    });
+  }
+  return out.sort((a,b)=>a.data<b.data?-1:1);
+}
+
+// Nazwa pliku z danymi z Garmina (musi byc taka sama jak PLIK w update_garmin.py).
+// Dla prywatnosci ustaw wlasny losowy ciag w obu plikach.
+const DATA_URL="garmin-1f93f974b3e15654.json";
+async function fetchRemote(){
+  try{
+    const res=await fetch(DATA_URL+"?t="+Date.now(),{cache:"no-store"});
+    if(!res.ok) return;                 // brak pliku (jeszcze) -> import reczny dalej dziala
+    const rows=await res.json();
+    if(Array.isArray(rows)&&rows.length){
+      gar={importedAt:Date.now(),rows,source:"auto"};
+      save("garmin-v1",gar); render();
+    }
+  }catch(e){}
+}
+render();
+fetchRemote();
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>

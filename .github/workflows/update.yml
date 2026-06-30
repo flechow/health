@@ -1,0 +1,40 @@
+name: Aktualizacja danych Garmin
+
+on:
+  schedule:
+    - cron: "0 5 * * *"   # 05:00 UTC = ~07:00 w Polsce (lato)
+  workflow_dispatch:        # pozwala uruchomic recznie z zakladki Actions
+
+permissions:
+  contents: write           # potrzebne, by zacommitowac plik z danymi
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pobierz repo
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Zaleznosci
+        run: pip install --upgrade garminconnect
+
+      - name: Odtworz token Garmina z sekretu
+        run: |
+          mkdir -p tokens
+          echo "${{ secrets.GARMIN_TOKENSTORE_B64 }}" | base64 -d | tar xz -C tokens
+
+      - name: Pobierz dane z Garmina
+        run: python update_garmin.py
+
+      - name: Zacommituj zmiany
+        run: |
+          git config user.name "garmin-bot"
+          git config user.email "garmin-bot@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Aktualizacja danych Garmin"
+          git push
