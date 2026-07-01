@@ -218,3 +218,12 @@ __marimo__/
 .streamlit/secrets.toml
 
 tokens/
+
+# --- Protokol: prywatnosc przy repo publicznym ---
+# Lokalne narzedzie do generowania tokenu Garmina (poza repo)
+make_token.py
+# Ustawienia IDE
+.idea/
+# Stary, NIEZASZYFROWANY zrzut danych zdrowotnych - nie moze trafic do repo publicznego.
+# Do repo commitujemy WYLACZNIE zaszyfrowany plik danych (blob AES-GCM).
+garmin-1f93f974b3e15654.json

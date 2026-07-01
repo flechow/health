@@ -266,19 +266,50 @@ function parseCSV(text){
   return out.sort((a,b)=>a.data<b.data?-1:1);
 }
 
-// Nazwa pliku z danymi z Garmina (musi byc taka sama jak PLIK w update_garmin.py).
-// Dla prywatnosci ustaw wlasny losowy ciag w obu plikach.
-const DATA_URL="garmin-1f93f974b3e15654.json";
+// Nazwa pliku z danymi z Garmina — MUSI byc taka sama jak PLIK w update_garmin.py.
+const DATA_URL="garmin-7c1f93a2.json";
+
+// --- Deszyfrowanie (zgodne 1:1 z update_garmin.py: PBKDF2-SHA256 -> AES-256-GCM) ---
+function b64ToBytes(s){ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i); return u; }
+async function decryptBlob(blob, pass){
+  const baseKey=await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  const key=await crypto.subtle.deriveKey(
+    {name:"PBKDF2", salt:b64ToBytes(blob.salt), iterations:blob.iter, hash:"SHA-256"},
+    baseKey, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  const pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(blob.iv)}, key, b64ToBytes(blob.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function getPass(){ return load("data-pass", null); }
+function setPass(p){ save("data-pass", p); }
+
 async function fetchRemote(){
+  let blob;
   try{
     const res=await fetch(DATA_URL+"?t="+Date.now(),{cache:"no-store"});
     if(!res.ok) return;                 // brak pliku (jeszcze) -> import reczny dalej dziala
-    const rows=await res.json();
-    if(Array.isArray(rows)&&rows.length){
-      gar={importedAt:Date.now(),rows,source:"auto"};
-      save("garmin-v1",gar); render();
-    }
-  }catch(e){}
+    blob=await res.json();
+  }catch(e){ return; }                  // offline -> zostaja dane z localStorage
+  // Zgodnosc wsteczna: gdyby plik byl kiedys zwykla (niezaszyfrowana) tablica.
+  if(Array.isArray(blob)){
+    if(blob.length){ gar={importedAt:Date.now(),rows:blob,source:"auto"}; save("garmin-v1",gar); render(); }
+    return;
+  }
+  if(!blob || blob.v!==1 || !blob.ct) return;   // nieznany format
+  if(!("subtle" in (window.crypto||{}))){ console.warn("Web Crypto wymaga HTTPS"); return; }
+  let pass=getPass();
+  for(let i=0;i<3;i++){
+    if(!pass){ pass=prompt("Haslo do odszyfrowania danych (DATA_PASSPHRASE):"); if(!pass) return; }
+    try{
+      const rows=await decryptBlob(blob, pass);
+      if(Array.isArray(rows)&&rows.length){
+        setPass(pass);
+        gar={importedAt:Date.now(),rows,source:"auto"};
+        save("garmin-v1",gar); render();
+      }
+      return;
+    }catch(e){ setPass(null); pass=null; }       // zle haslo -> pytaj ponownie
+  }
+  alert("Nie udalo sie odszyfrowac danych (bledne haslo?).");
 }
 render();
 fetchRemote();
