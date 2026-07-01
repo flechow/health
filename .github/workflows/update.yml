@@ -29,6 +29,8 @@ jobs:
           echo "${{ secrets.GARMIN_TOKENSTORE_B64 }}" | base64 -d | tar xz -C tokens
 
       - name: Pobierz dane z Garmina
+        env:
+          DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}
         run: python update_garmin.py
 
       - name: Zacommituj zmiany

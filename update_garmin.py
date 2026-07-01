@@ -12,7 +12,7 @@ sklad ciala (% tluszczu, mięsnie, woda) jesli masz wage Garmin Index,
 oraz lokalizacje (z GPS aktywnosci, z przenoszeniem na kolejne dni) i temperature
 w tej lokalizacji (max + nocne minimum).
 """
-import json, os, time, base64, hashlib, getpass, urllib.parse, requests
+import sys, json, os, time, base64, hashlib, getpass, urllib.parse, requests
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from datetime import date, timedelta
 from garminconnect import Garmin
@@ -282,7 +282,13 @@ def main():
 
     # --- szyfrowanie AES-256-GCM (klucz z hasla przez PBKDF2) ---
     plaintext = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    passphrase = os.environ.get("DATA_PASSPHRASE") or getpass.getpass("Haslo szyfrowania danych: ")
+    passphrase = os.environ.get("DATA_PASSPHRASE")
+    if not passphrase:
+        if sys.stdin and sys.stdin.isatty():
+            passphrase = getpass.getpass("Haslo szyfrowania danych: ")
+        else:
+            raise SystemExit("BLAD: brak DATA_PASSPHRASE w srodowisku. "
+                             "Ustaw sekret i przekaz go przez 'env:' w kroku workflow.")
     ITER = 200000
     salt, iv = os.urandom(16), os.urandom(12)
     key = hashlib.pbkdf2_hmac("sha256", passphrase.encode("utf-8"), salt, ITER, dklen=32)
