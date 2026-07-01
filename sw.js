@@ -1,4 +1,4 @@
-const CACHE = 'protokol-v2';
+const CACHE = 'protokol-v3';
 const ASSETS = [
   './',
   './index.html',

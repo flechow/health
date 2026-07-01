@@ -92,6 +92,7 @@ const WL=["Pn","Wt","Śr","Cz","Pt","So","Nd"];
 
 let log = load('fit-log-v1', {days:{},weights:{}});
 let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
+try{ localStorage.removeItem('garmin-v1'); localStorage.removeItem('data-pass'); }catch(e){}  // wyczysc stare cache danych i haslo ze starej wersji
 
 function load(k,def){ try{const v=localStorage.getItem(k); return v?JSON.parse(v):def;}catch(e){return def;} }
 function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
