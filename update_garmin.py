@@ -12,7 +12,8 @@ sklad ciala (% tluszczu, mięsnie, woda) jesli masz wage Garmin Index,
 oraz lokalizacje (z GPS aktywnosci, z przenoszeniem na kolejne dni) i temperature
 w tej lokalizacji (max + nocne minimum).
 """
-import json, time, urllib.request, urllib.parse
+import json, os, time, base64, hashlib, getpass, urllib.parse, requests
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from datetime import date, timedelta
 from garminconnect import Garmin
 
@@ -25,7 +26,7 @@ HOME = (50.3217, 19.1873)
 
 # Nazwa pliku z danymi. ZMIEN na wlasny losowy ciag i ustaw te sama nazwe
 # w index.html (DATA_URL). Repo prywatne nie ukrywa pliku serwowanego przez Pages!
-PLIK = "garmin-1f93f974b3e15654.json"
+PLIK = "garmin-7c1f93a2.json"
 
 
 # ===================== narzedzia =====================
@@ -48,9 +49,9 @@ def first(d, *ks):
     return None
 
 def _json(url, headers=None):
-    req = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r)
+    r = requests.get(url, headers=headers or {}, timeout=30)
+    r.raise_for_status()
+    return r.json()
 
 
 # ===================== lokalizacja =====================
@@ -278,8 +279,20 @@ def main():
         time.sleep(PAUZA)
 
     rows.sort(key=lambda x: x["data"])
+
+    # --- szyfrowanie AES-256-GCM (klucz z hasla przez PBKDF2) ---
+    plaintext = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    passphrase = os.environ.get("DATA_PASSPHRASE") or getpass.getpass("Haslo szyfrowania danych: ")
+    ITER = 200000
+    salt, iv = os.urandom(16), os.urandom(12)
+    key = hashlib.pbkdf2_hmac("sha256", passphrase.encode("utf-8"), salt, ITER, dklen=32)
+    ct = AESGCM(key).encrypt(iv, plaintext, None)
+    blob = {"v": 1, "kdf": "PBKDF2-SHA256", "iter": ITER,
+            "salt": base64.b64encode(salt).decode(),
+            "iv": base64.b64encode(iv).decode(),
+            "ct": base64.b64encode(ct).decode()}
     with open(PLIK, "w", encoding="utf-8") as f:
-        json.dump(rows, f, ensure_ascii=False, separators=(",", ":"))
+        json.dump(blob, f, separators=(",", ":"))
 
     def cnt(k):
         return sum(1 for r in rows if r[k] not in (None, ""))
