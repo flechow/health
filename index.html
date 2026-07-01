@@ -91,7 +91,7 @@ const PLAN={
 const WL=["Pn","Wt","Śr","Cz","Pt","So","Nd"];
 
 let log = load('fit-log-v1', {days:{},weights:{}});
-let gar = load('garmin-v1', null);
+let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
 
 function load(k,def){ try{const v=localStorage.getItem(k); return v?JSON.parse(v):def;}catch(e){return def;} }
 function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
@@ -159,8 +159,30 @@ function garminCard(){
   </div>`;
 }
 
+function renderLocked(){
+  document.getElementById("app").innerHTML = `
+    <p class="eyebrow">Protokół metaboliczny</p>
+    <h1>Faza 1 · Baza tlenowa</h1>
+    <div class="card" style="text-align:center">
+      <div style="font-size:38px">🔒</div>
+      <p class="sub" style="margin-top:8px">Dane są zaszyfrowane.<br>Podaj hasło, aby je odszyfrować.</p>
+      <button class="act" id="unlock" style="margin-top:14px">Odblokuj hasłem</button>
+    </div>
+    <label class="imp" id="impbtn">📥 Importuj dane Garmina <b>(CSV)</b><br>
+      <span style="font-size:12px">plik garmin_export.csv z Colab</span></label>
+    <p class="foot">Nic osobistego nie jest pokazywane bez hasła.</p>`;
+  document.getElementById("unlock").onclick=()=>{ setPass(null); fetchRemote(); };
+  document.getElementById("impbtn").onclick=()=>document.getElementById("csv").click();
+}
+
 function render(){
   const t=new Date(), tk=key(t), te=log.days[tk]||{}, pl=PLAN[t.getDay()];
+  if(!(gar&&gar.rows&&gar.rows.length)){ renderLocked(); return; }  // nic osobistego bez odszyfrowania
+  const rows=gar.rows;
+  const lastOf=(k)=>{for(let i=rows.length-1;i>=0;i--){const v=rows[i][k]; if(v!=null&&v!==""&&!isNaN(v))return +v;}return null;};
+  const meanTail=(k,n)=>{const a=rows.map(r=>r[k]).filter(x=>x!=null&&!isNaN(x)).slice(-n); return a.length?a.reduce((s,x)=>s+x,0)/a.length:null;};
+  const hrvNow=meanTail("hrv",7), stepsNow=meanTail("kroki",7), vo2Now=lastOf("vo2max");
+  const markers=load("markers-v1",{}), tghdl=(markers.tg&&markers.hdl)?markers.tg/markers.hdl:null;
   const mw=mergedWeights();
   const cur=mw.length?mw[mw.length-1].v:START;
   const prog=Math.max(0,Math.min(100,(START-cur)/(START-GOAL)*100));
@@ -211,10 +233,10 @@ function render(){
 
     <div class="card">
       <p class="label">Cele fazy 1 (8–12 tyg.)</p>
-      <div class="tgt"><div><div class="n">TG / HDL</div><div class="note">główny licznik ryzyka</div></div><div class="mono" style="color:var(--mut)">8,1 <span style="color:var(--amber)">→ &lt;3</span></div></div>
-      <div class="tgt"><div><div class="n">HRV nocne</div><div class="note">odwrócić trend w górę</div></div><div class="mono" style="color:var(--mut)">~49 <span style="color:var(--amber)">→ 55+</span></div></div>
-      <div class="tgt"><div><div class="n">Kroki / dzień</div><div class="note">teraz ~5000</div></div><div class="mono" style="color:var(--mut)">5k <span style="color:var(--amber)">→ 7–8k</span></div></div>
-      <div class="tgt"><div><div class="n">VO2max</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">36 <span style="color:var(--amber)">→ 40</span></div></div>
+      <div class="tgt"><div><div class="n">TG / HDL</div><div class="note">główny licznik ryzyka</div></div><div class="mono" style="color:var(--mut)">${tghdl!=null?r1(tghdl):"—"} <span style="color:var(--amber)">→ &lt;3</span></div></div>
+      <div class="tgt"><div><div class="n">HRV nocne</div><div class="note">odwrócić trend w górę</div></div><div class="mono" style="color:var(--mut)">${hrvNow!=null?Math.round(hrvNow):"—"} <span style="color:var(--amber)">→ 55+</span></div></div>
+      <div class="tgt"><div><div class="n">Kroki / dzień</div><div class="note">średnia 7 dni</div></div><div class="mono" style="color:var(--mut)">${stepsNow!=null?(Math.round(stepsNow/100)/10)+"k":"—"} <span style="color:var(--amber)">→ 7–8k</span></div></div>
+      <div class="tgt"><div><div class="n">VO2max</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">${vo2Now!=null?Math.round(vo2Now):"—"} <span style="color:var(--amber)">→ 40</span></div></div>
     </div>
 
     <p class="foot">Dane zapisują się lokalnie na tym urządzeniu.</p>
@@ -236,8 +258,8 @@ document.getElementById("csv").onchange=(ev)=>{
     try{
       const rows=parseCSV(rd.result);
       if(!rows.length){alert("Nie znalazłem danych w pliku.");return;}
-      gar={importedAt:Date.now(), rows};
-      save("garmin-v1",gar); render();
+      gar={importedAt:Date.now(), rows};   // tylko w pamieci sesji
+      render();
     }catch(e){ alert("Nie udało się wczytać pliku CSV."); }
   };
   rd.readAsText(f);
@@ -279,8 +301,9 @@ async function decryptBlob(blob, pass){
   const pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(blob.iv)}, key, b64ToBytes(blob.ct));
   return JSON.parse(new TextDecoder().decode(pt));
 }
-function getPass(){ return load("data-pass", null); }
-function setPass(p){ save("data-pass", p); }
+let _pass=null;                          // haslo trzymamy TYLKO w pamieci sesji
+function getPass(){ return _pass; }
+function setPass(p){ _pass=p; }
 
 async function fetchRemote(){
   let blob;
@@ -291,7 +314,7 @@ async function fetchRemote(){
   }catch(e){ return; }                  // offline -> zostaja dane z localStorage
   // Zgodnosc wsteczna: gdyby plik byl kiedys zwykla (niezaszyfrowana) tablica.
   if(Array.isArray(blob)){
-    if(blob.length){ gar={importedAt:Date.now(),rows:blob,source:"auto"}; save("garmin-v1",gar); render(); }
+    if(blob.length){ gar={importedAt:Date.now(),rows:blob,source:"auto"}; render(); }   // tylko w pamieci
     return;
   }
   if(!blob || blob.v!==1 || !blob.ct) return;   // nieznany format
@@ -303,8 +326,8 @@ async function fetchRemote(){
       const rows=await decryptBlob(blob, pass);
       if(Array.isArray(rows)&&rows.length){
         setPass(pass);
-        gar={importedAt:Date.now(),rows,source:"auto"};
-        save("garmin-v1",gar); render();
+        gar={importedAt:Date.now(),rows,source:"auto"};   // tylko w pamieci
+        render();
       }
       return;
     }catch(e){ setPass(null); pass=null; }       // zle haslo -> pytaj ponownie
