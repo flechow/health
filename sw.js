@@ -1,4 +1,4 @@
-const CACHE = 'protokol-v3';
+const CACHE = 'protokol-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -25,22 +25,23 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
 
-  // Plik z danymi Garmina: siec najpierw (swieze), z kopia na offline.
-  if (url.pathname.includes('garmin-') && url.pathname.endsWith('.json')) {
+  // UI (nawigacja, index.html) i dane Garmina: siec najpierw (zawsze swiezy kod/dane), cache na offline.
+  const shell = e.request.mode === 'navigate'
+    || url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')
+    || (url.pathname.includes('garmin-') && url.pathname.endsWith('.json'));
+  if (shell) {
     e.respondWith(
       fetch(e.request).then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
         return res;
-      }).catch(() => caches.match(e.request))
+      }).catch(() => caches.match(e.request).then((m) => m || caches.match('./index.html')))
     );
     return;
   }
 
-  // Reszta: cache najpierw (apka dziala offline).
+  // Statyczne zasoby (ikony, manifest): cache najpierw (apka dziala offline).
   e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached || fetch(e.request).catch(() => caches.match('./index.html'))
-    )
+    caches.match(e.request).then((cached) => cached || fetch(e.request))
   );
 });

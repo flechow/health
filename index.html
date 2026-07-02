@@ -90,6 +90,49 @@ const PLAN={
 };
 const WL=["Pn","Wt","Śr","Cz","Pt","So","Nd"];
 
+// ===== Adaptacyjna decyzja treningowa (progi do wspoldzielenia z przyszlym plan.py 'decide') =====
+const DEC={ readyRed:35, readyYel:58, hrvRedFrac:0.82, hrvYelFrac:0.92, rhrRedDelta:7, rhrYelDelta:4, sleepRed:5.0, sleepYel:6.2 };
+function baseline(rows, field, n){
+  const a=rows.slice(0,-1).map(r=>r[field]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
+  return a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+}
+function decideJS(plan, rows){
+  const r=rows[rows.length-1]||{};
+  const hrvBase=baseline(rows,"hrv",7), rhrBase=baseline(rows,"rhr",7);
+  const st=(r.status||"").toUpperCase();
+  let level=0; const why=[];
+  const bump=(lv,txt)=>{ level=Math.max(level,lv); if(txt)why.push([lv,txt]); };
+  if(r.gotowosc!=null){ if(r.gotowosc<DEC.readyRed)bump(2,`gotowość ${Math.round(r.gotowosc)}`); else if(r.gotowosc<DEC.readyYel)bump(1,`gotowość ${Math.round(r.gotowosc)}`); }
+  if(st==="POOR"||st==="LOW")bump(2,`HRV ${st==="POOR"?"słabe":"niskie"}`); else if(st==="UNBALANCED")bump(1,"HRV niezrównoważone");
+  if(r.hrv!=null&&hrvBase){ if(r.hrv<DEC.hrvRedFrac*hrvBase)bump(2,`HRV ${Math.round(r.hrv)} ms (baza ${Math.round(hrvBase)})`); else if(r.hrv<DEC.hrvYelFrac*hrvBase)bump(1,`HRV ${Math.round(r.hrv)} ms (baza ${Math.round(hrvBase)})`); }
+  if(r.sen!=null){ if(r.sen<DEC.sleepRed)bump(2,`sen ${r.sen} h`); else if(r.sen<DEC.sleepYel)bump(1,`sen ${r.sen} h`); }
+  if(r.rhr!=null&&rhrBase){ if(r.rhr>rhrBase+DEC.rhrRedDelta)bump(2,`tętno sp. ${Math.round(r.rhr)} (baza ${Math.round(rhrBase)})`); else if(r.rhr>rhrBase+DEC.rhrYelDelta)bump(1,`tętno sp. ${Math.round(r.rhr)}`); }
+
+  const haveAny = r.gotowosc!=null||r.hrv!=null||r.sen!=null;
+  if(!haveAny) return {dot:"⚪",tag:"Brak danych",session:plan,swapped:false,planName:plan.n,why:"brak danych regeneracji — plan bazowy"};
+
+  const REST={n:"Regeneracja",d:"Spacer · mobilność · rozciąganie · oddech",i:"🧘",k:"rest"};
+  const Z2={n:"Zone 2 — spokojnie",d:"30–35 min · tętno 125–140 · oddech nosem",i:"🚴",k:"cardio"};
+  let session=plan, dot, tag;
+  if(level>=2){ dot="🔴"; tag="Regeneracja"; if(plan.k!=="rest")session=REST; }
+  else if(level===1){ dot="🟡"; tag="Lekko";
+    if(plan.k==="strength")session=Z2;
+    else if(plan.k==="cardio")session={...plan,d:plan.d+" · dziś krócej"}; }
+  else { dot="🟢"; tag="Gotowy"; if(plan.k==="strength")session={...plan,d:plan.d+" · możesz docisnąć"}; }
+
+  const swapped = session.n!==plan.n;
+  let why_txt;
+  if(level===0){
+    const good=[]; if(r.gotowosc!=null)good.push(`gotowość ${Math.round(r.gotowosc)}`); if(r.hrv!=null)good.push(`HRV ${Math.round(r.hrv)} ms`); if(r.sen!=null)good.push(`sen ${r.sen} h`);
+    why_txt = good.slice(0,3).join(", ")+" → plan bez zmian";
+  } else {
+    const top = why.filter(w=>w[0]===level).slice(0,2).map(w=>w[1]);
+    const tail = level>=2 ? "dziś regeneracja, nie siła" : (swapped?"ścinamy do Zone 2":"trzymaj lekko");
+    why_txt = top.join(", ")+" → "+tail;
+  }
+  return {dot,tag,session,swapped,planName:plan.n,why:why_txt};
+}
+
 let log = load('fit-log-v1', {days:{},weights:{}});
 let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
 try{ localStorage.removeItem('garmin-v1'); localStorage.removeItem('data-pass'); }catch(e){}  // wyczysc stare cache danych i haslo ze starej wersji
@@ -190,8 +233,9 @@ function render(){
   const toGoal=Math.round((cur-GOAL)*10)/10;
   const mon=monday(t), wd=[...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
   const trained=wd.slice(0,6).filter(d=>(log.days[key(d)]||{}).trained).length;
-  const doneTxt = pl.k==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
-                                : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
+  const dec = decideJS(pl, rows);
+  const doneTxt = dec.session.k==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
+                                         : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
 
   document.getElementById("app").innerHTML = `
     <p class="eyebrow">Protokół metaboliczny</p>
@@ -205,8 +249,14 @@ function render(){
     </div>
 
     <div class="card">
-      <p class="label">Dziś · ${WL[(t.getDay()+6)%7]}</p>
-      <div class="row"><div class="ic">${pl.i}</div><div><div class="plan-name">${pl.n}</div><div class="plan-det">${pl.d}</div></div></div>
+      <div class="between"><p class="label">Dziś · ${WL[(t.getDay()+6)%7]}</p>
+        <span style="font-size:13px">${dec.dot} <b style="color:var(--tx)">${dec.tag}</b></span></div>
+      <div class="row"><div class="ic">${dec.session.i}</div><div>
+        <div class="plan-name">${dec.session.n}</div>
+        <div class="plan-det">${dec.session.d}</div>
+        ${dec.swapped?`<div class="plan-det" style="color:var(--mut2)">plan na dziś: ${dec.planName}</div>`:""}
+      </div></div>
+      <div class="sub" style="margin-top:10px">${dec.why}</div>
       <button class="act ${te.trained?"done":""}" data-x="trained">${doneTxt}</button>
       <button class="act sleep ${te.sleptEarly?"on":""}" data-x="sleptEarly">${te.sleptEarly?"😴 W łóżku przed 22:00":"W łóżku przed 22:00?"}</button>
     </div>
