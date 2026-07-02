@@ -1,0 +1,33 @@
+name: Poranny briefing (push)
+
+# Izolowany od pipeline'u danych: nawet jesli cos tu padnie, aktualizacja Garmina dziala dalej.
+on:
+  schedule:
+    - cron: "12 5 * * *"   # ~kilka minut po aktualizacji danych (0 5 * * *)
+  workflow_dispatch:        # reczne uruchomienie do testu
+
+permissions:
+  contents: read
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pobierz repo
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Zaleznosci
+        run: pip install -r requirements.txt pywebpush
+
+      - name: Wyslij poranny briefing
+        env:
+          DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: python send_briefing.py

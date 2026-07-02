@@ -146,6 +146,19 @@
   .toggle{display:inline-block; margin-top:8px; font-size:12px; color:var(--mut); cursor:pointer;
     border:1px solid var(--bd); border-radius:999px; padding:6px 13px;}
   .toggle b{color:var(--amber-l); font-weight:600;}
+  /* Postępy */
+  .seg{display:flex; gap:6px; background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:5px; margin-top:14px;}
+  .segb{flex:1; border:0; border-radius:10px; padding:10px; font-size:14px; font-weight:600; background:transparent; color:var(--mut); cursor:pointer;}
+  .segb.on{background:#232323; color:var(--tx);}
+  .trend{padding:12px 0;} .trend+.trend{border-top:1px solid #1f1f1f;}
+  .trend .n{font-size:14px; font-weight:500;}
+  .exprog{padding:12px 0;} .exprog+.exprog{border-top:1px solid #1f1f1f;}
+  .exprog .n{font-size:14px; font-weight:500;}
+  .bars{display:flex; align-items:flex-end; gap:6px; height:110px; margin-top:10px;}
+  .bar{flex:1; display:flex; flex-direction:column; align-items:center; height:100%;}
+  .bwrap{flex:1; width:100%; display:flex; align-items:flex-end; background:#1a1a1a; border-radius:6px; overflow:hidden;}
+  .bfill{width:100%; border-radius:6px 6px 0 0; min-height:2px;}
+  .blab{font-size:10px; color:var(--mut2); margin-top:5px; font-variant-numeric:tabular-nums;}
 </style>
 </head>
 <body>
@@ -192,6 +205,7 @@ const DEFAULT_PLAN={
     }}
  ]};
 let PLANDATA=DEFAULT_PLAN;
+let view='today';                        // 'today' | 'progress' — przełącznik u góry
 
 // Override auto-progresji faz (localStorage): {activePhase, starts:{ "<id>":"YYYY-MM-DD" }}
 function planOverride(){ return load('plan-override-v1', null); }
@@ -605,6 +619,69 @@ function phaseTransitionCard(ph, wk){
   </div>`;
 }
 
+// ===== Widok Postępy =====
+function exNameMap(){
+  const m={};
+  ((PLANDATA&&PLANDATA.phases)||[]).forEach(ph=>{
+    Object.values(ph.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id&&!m[e.id]) m[e.id]=e.name; }); });
+  });
+  return m;
+}
+function weeklyAgg(rows){
+  const byWeek={};
+  rows.forEach(r=>{ if(!r.data) return; const d=new Date(r.data+"T00:00:00"); if(isNaN(d)) return;
+    const k=key(monday(d)); (byWeek[k]=byWeek[k]||{minutes:0,trained:0}).minutes += (r.min_intensywne!=null&&!isNaN(r.min_intensywne))?r.min_intensywne:0; });
+  Object.keys(log.days||{}).forEach(dk=>{ if((log.days[dk]||{}).trained){ const d=new Date(dk+"T00:00:00"); if(isNaN(d)) return;
+    const k=key(monday(d)); (byWeek[k]=byWeek[k]||{minutes:0,trained:0}).trained += 1; } });
+  return Object.keys(byWeek).sort().slice(-8).map(k=>{ const dd=new Date(k+"T00:00:00");
+    return {short:(dd.getMonth()+1)+"/"+dd.getDate(), minutes:Math.round(byWeek[k].minutes||0), trained:byWeek[k].trained||0}; });
+}
+function bars(items, color){
+  if(!items.length) return '<div class="sub">Za mało danych.</div>';
+  const mx=Math.max(1,...items.map(i=>i.v));
+  return `<div class="bars">${items.map(i=>`<div class="bar" title="${i.v}">
+    <div class="bwrap"><div class="bfill" style="height:${Math.round(i.v/mx*100)}%;background:${color}"></div></div>
+    <div class="blab">${i.label}</div></div>`).join("")}</div>`;
+}
+function progressView(rows){
+  const nzslice=(k,n)=>rows.map(r=>r[k]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
+  const mw=mergedWeights().map(p=>p.v);
+  const trend=(label,vals,unit,goodUp,info,color)=>{
+    vals=nz(vals); if(vals.length<2) return "";
+    const cur=vals[vals.length-1], delta=cur-vals[0];
+    const cls=(delta>0)===goodUp?"up":"down", sign=delta>0?"+":"";
+    return `<div class="trend" data-info="${info}">
+      <div class="between"><div class="n">${label}${ic()}</div>
+        <div class="mono"><b>${r1(cur)}</b> ${unit} ${Math.abs(delta)<0.05?"":`<span class="arrow ${cls}">${sign}${r1(delta)}</span>`}</div></div>
+      ${spark(vals,color)}</div>`;
+  };
+  const wk=weeklyAgg(rows), nm=exNameMap();
+  const exIds=Object.keys(log.exHist||{}).filter(id=>(log.exHist[id]||[]).length>=1);
+  const totalTrained=wk.reduce((s,w)=>s+w.trained,0);
+  return `
+    <div class="card">
+      <p class="label">Kluczowe trendy</p>
+      ${trend("Waga",mw.slice(-60),"kg",false,"weight","#fbbf24")||`<div class="sub">Waga: za mało danych.</div>`}
+      ${trend("HRV nocne",nzslice("hrv",60),"ms",true,"hrv","#10b981")}
+      ${trend("VO₂max",nzslice("vo2max",90),"",true,"vo2max","#6366f1")}
+      ${trend("Kroki (dz.)",nzslice("kroki",30),"",true,"steps","#f59e0b")}
+    </div>
+    <div class="card">
+      <p class="label">Objętość tygodniowa${ib('minint')}</p>
+      <div class="sub" style="margin-bottom:2px">Minuty intensywne / tydzień (ostatnie ${wk.length})</div>
+      ${bars(wk.map(w=>({label:w.short,v:w.minutes})),"#6366f1")}
+      <div class="sub" style="margin-top:12px">Treningi odhaczone: <b style="color:var(--tx)">${totalTrained}</b> w ${wk.length} tyg.</div>
+    </div>
+    ${exIds.length?`<div class="card">
+      <p class="label">Siła — progresja${ib('strength')}</p>
+      ${exIds.map(id=>{ const vals=(log.exHist[id]||[]).map(e=>e.kg); const cur=vals[vals.length-1], d=cur-vals[0];
+        return `<div class="exprog"><div class="between"><div class="n">${nm[id]||id}</div>
+          <div class="mono"><b>${fmt(cur)}</b> kg ${vals.length>1&&d!==0?`<span class="arrow ${d>0?"up":"down"}">${d>0?"+":""}${fmt(d)}</span>`:""}</div></div>
+          ${vals.length>1?spark(vals,"#f59e0b"):`<div class="sub">Zapisz kolejny ciężar, by zobaczyć trend.</div>`}</div>`;}).join("")}
+    </div>`:`<div class="card"><p class="label">Siła — progresja</p><div class="sub" style="margin-top:8px">Zapisuj ciężary przy ćwiczeniach w zakładce „Dziś", a tu pojawią się wykresy progresji.</div></div>`}
+  `;
+}
+
 function renderLocked(){
   document.getElementById("app").innerHTML = `
     <p class="eyebrow">Protokół metaboliczny</p>
@@ -649,6 +726,12 @@ function render(){
     <p class="eyebrow">Protokół metaboliczny</p>
     <h1>${ph.subtitle} · ${ph.name}</h1>
 
+    <div class="seg">
+      <button class="segb ${view==='today'?'on':''}" data-view="today">Dziś</button>
+      <button class="segb ${view==='progress'?'on':''}" data-view="progress">Postępy</button>
+    </div>
+
+    ${view==='progress' ? progressView(rows) : `
     <div class="card">
       <div class="big mono">${(Math.round(cur*10)/10).toFixed(1)}<span style="font-size:18px;color:var(--mut)"> kg</span></div>
       <div class="sub">${toGoal>0?toGoal.toFixed(1)+" kg do celu 90":"cel osiągnięty 🎉"} · start 116</div>
@@ -707,6 +790,8 @@ function render(){
 
     ${gar?`<button class="refresh" id="refreshBtn">🔄 Odśwież dane z Garmina</button>`:""}
 
+    ${gar?`<button class="refresh" id="briefBtn">${briefingOn()?"🔔 Poranny briefing: włączony — dotknij, by wyłączyć":"🔔 Włącz poranny briefing (push)"}</button>`:""}
+
     <label class="imp" id="impbtn">📥 Import z pliku <b>(CSV)</b><br>
       <span style="font-size:12px">awaryjnie: garmin_export.csv z Colab</span></label>
 
@@ -717,20 +802,25 @@ function render(){
       <div class="tgt" data-info="steps"><div><div class="n">Kroki / dzień${ic()}</div><div class="note">średnia 7 dni</div></div><div class="mono" style="color:var(--mut)">${stepsNow!=null?(Math.round(stepsNow/100)/10)+"k":"—"} <span style="color:var(--amber)">→ 7–8k</span></div></div>
       <div class="tgt" data-info="vo2max"><div><div class="n">VO2max${ic()}</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">${vo2Now!=null?Math.round(vo2Now):"—"} <span style="color:var(--amber)">→ 40</span></div></div>
     </div>
+    `}
 
     <p class="foot">Dane zapisują się lokalnie na tym urządzeniu.</p>
     <div style="text-align:center">
       <span class="toggle" id="explainToggle">Objaśnienia (dotknij metryki): <b>${explainOn()?"włączone":"wyłączone"}</b> · zmień</span>
       ${planOverride()?`<div><span class="toggle" id="phaseReset" style="margin-top:8px">↺ Cofnij ręczną zmianę fazy</span></div>`:""}
+      <div><span class="toggle" id="lockBtn" style="margin-top:8px">🔒 Zapomnij hasło na tym urządzeniu</span></div>
     </div>
   `;
 
+  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{ view=b.getAttribute("data-view"); render(); });
   document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{
     const f=b.getAttribute("data-x"); const e={...(log.days[tk]||{})}; e[f]=!e[f]; log.days[tk]=e; save("fit-log-v1",log); render();
   });
   const ws=document.getElementById("wsave"), wi=document.getElementById("w");
-  ws.onclick=()=>{const v=parseFloat((wi.value||"").replace(",",".")); if(!v||v<40||v>250)return; log.weights[tk]=Math.round(v*10)/10; save("fit-log-v1",log); render();};
-  wi.onkeydown=(e)=>{if(e.key==="Enter")ws.onclick();};
+  if(ws&&wi){
+    ws.onclick=()=>{const v=parseFloat((wi.value||"").replace(",",".")); if(!v||v<40||v>250)return; log.weights[tk]=Math.round(v*10)/10; save("fit-log-v1",log); render();};
+    wi.onkeydown=(e)=>{if(e.key==="Enter")ws.onclick();};
+  }
   document.querySelectorAll("input[data-ex]").forEach(inp=>{
     inp.onkeydown=(e)=>{ if(e.key==="Enter") inp.blur(); };
     inp.onchange=()=>{ const id=inp.getAttribute("data-ex");
@@ -739,7 +829,10 @@ function render(){
   });
   const rb=document.getElementById("refreshBtn");
   if(rb){ rb.onclick=refreshFromGarmin; if(refreshing) setRefreshLabel("Aktualizuję… (do ~3 min)", true); }
-  document.getElementById("impbtn").onclick=()=>document.getElementById("csv").click();
+  const bfb=document.getElementById("briefBtn");
+  if(bfb) bfb.onclick=()=> briefingOn()?disableBriefing():enableBriefing();
+  const imp=document.getElementById("impbtn");
+  if(imp) imp.onclick=()=>document.getElementById("csv").click();
   const npb=document.getElementById("nextPhaseBtn");
   if(npb) npb.onclick=()=>{ const np=nextPhase(ph); if(!np) return;
     const ov=load("plan-override-v1",{})||{}; ov.activePhase=np.id; ov.starts=ov.starts||{};
@@ -748,6 +841,8 @@ function render(){
   if(et) et.onclick=()=>{ setExplain(!explainOn()); render(); };
   const pr=document.getElementById("phaseReset");
   if(pr) pr.onclick=()=>{ try{ localStorage.removeItem("plan-override-v1"); }catch(e){} render(); };
+  const lb=document.getElementById("lockBtn");
+  if(lb) lb.onclick=()=>{ if(confirm("Zapomnieć hasło na tym urządzeniu? Trzeba je będzie podać ponownie.")) forgetPass(); };
 }
 
 // Interaktywne objaśnienia: jedno delegowane nasłuchiwanie, działa po każdym renderze.
@@ -813,6 +908,40 @@ const REFRESH_SALT="protokol-refresh-auth-v1", REFRESH_ITER=100000;   // MUSI zg
 let lastCt=null, refreshing=false;
 const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
 
+// ===== Poranny briefing (Web Push) =====
+// Publiczny klucz VAPID — bezpieczny w kodzie. Prywatny trzymaj jako sekret VAPID_PRIVATE_KEY w GitHub (patrz PUSH_SETUP.md).
+const VAPID_PUBLIC_KEY="BJfML0e8bUr6Kwsnx8U-iT4wippeaGHNUk4lykAlSFJqKil6J3enatoYwutZGdm4AUxKRTxtVm0fXwm6aYkVwDU";
+function briefingOn(){ return !!load('briefing-v1', false); }
+function urlB64ToUint8(s){ const pad="=".repeat((4-s.length%4)%4); const b=(s+pad).replace(/-/g,"+").replace(/_/g,"/");
+  const raw=atob(b), u=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++) u[i]=raw.charCodeAt(i); return u; }
+async function enableBriefing(){
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+    alert("To urządzenie/przeglądarka nie wspiera powiadomień push.\nNa iPhone: dodaj apkę do ekranu głównego i otwórz z ikony (iOS 16.4+)."); return; }
+  const pass=getPass();
+  if(!pass){ alert("Najpierw odblokuj dane hasłem, potem włącz briefing."); return; }
+  if(!REFRESH_URL || REFRESH_URL.indexOf("REPLACE-ME")>=0){
+    alert("Najpierw skonfiguruj Workera (REFRESH_URL) — instrukcja: REFRESH_SETUP.md / PUSH_SETUP.md."); return; }
+  let perm=Notification.permission;
+  if(perm!=="granted") perm=await Notification.requestPermission();
+  if(perm!=="granted"){ alert("Powiadomienia są zablokowane. Włącz je w ustawieniach systemu, aby dostawać briefing."); return; }
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64ToUint8(VAPID_PUBLIC_KEY)});
+    const auth=await deriveAuth(pass);
+    const res=await fetch(REFRESH_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({auth, sub})});
+    if(res.status===401) throw new Error("hasło nie pasuje do konfiguracji Workera");
+    if(!res.ok) throw new Error("Worker "+res.status);
+    save("briefing-v1", true);
+    alert("Włączone ✅ Poranny briefing przyjdzie po porannej aktualizacji danych (~07:00)."); render();
+  }catch(e){ alert("Nie udało się włączyć briefingu: "+((e&&e.message)||e)); }
+}
+async function disableBriefing(){
+  save("briefing-v1", false);
+  try{ const reg=await navigator.serviceWorker.ready; const s=await reg.pushManager.getSubscription(); if(s) await s.unsubscribe(); }catch(e){}
+  render();
+}
+
 async function deriveAuth(pass){
   const bk=await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"]);
   const bits=await crypto.subtle.deriveBits(
@@ -866,9 +995,12 @@ async function decryptBlob(blob, pass){
   const pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(blob.iv)}, key, b64ToBytes(blob.ct));
   return JSON.parse(new TextDecoder().decode(pt));
 }
-let _pass=null;                          // haslo trzymamy TYLKO w pamieci sesji
-function getPass(){ return _pass; }
-function setPass(p){ _pass=p; }
+// Haslo: zapamietane na TYM urzadzeniu (localStorage), zeby nie podawac go po kazdym odswiezeniu.
+// Ochrona danych opiera sie wtedy na blokadzie urzadzenia. Mozesz je wyczyscic: „zapomnij haslo" w stopce.
+let _pass=null;
+function getPass(){ if(_pass!=null) return _pass; const p=load('pw-v1', null); if(p!=null) _pass=p; return _pass; }
+function setPass(p){ _pass=p; try{ if(p) localStorage.setItem('pw-v1', JSON.stringify(p)); else localStorage.removeItem('pw-v1'); }catch(e){} }
+function forgetPass(){ setPass(null); gar=null; render(); }
 
 async function fetchRemote(){
   let blob;
