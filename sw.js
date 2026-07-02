@@ -1,7 +1,8 @@
-const CACHE = 'protokol-v4';
+const CACHE = 'protokol-v5';
 const ASSETS = [
   './',
   './index.html',
+  './plan.json',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
@@ -28,6 +29,7 @@ self.addEventListener('fetch', (e) => {
   // UI (nawigacja, index.html) i dane Garmina: siec najpierw (zawsze swiezy kod/dane), cache na offline.
   const shell = e.request.mode === 'navigate'
     || url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')
+    || url.pathname.endsWith('/plan.json')
     || (url.pathname.includes('garmin-') && url.pathname.endsWith('.json'));
   if (shell) {
     e.respondWith(

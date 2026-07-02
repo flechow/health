@@ -1,0 +1,13 @@
+name = "protokol-refresh"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Zmienne jawne (nie-tajne). Sekrety (GH_TOKEN, REFRESH_AUTH_HASH) ustaw osobno:
+#   wrangler secret put GH_TOKEN
+#   wrangler secret put REFRESH_AUTH_HASH
+[vars]
+GH_REPO = "flechow/health"
+GH_WORKFLOW = "update.yml"
+GH_REF = "main"
+REFRESH_DAYS = "3"          # szybkie odświeżanie: pobierz ostatnie N dni i scal z historią
+ALLOW_ORIGIN = "*"          # zalecane: ustaw na swój adres Pages, np. "https://flechow.github.io"

@@ -3,7 +3,12 @@ name: Aktualizacja danych Garmin
 on:
   schedule:
     - cron: "0 5 * * *"   # 05:00 UTC = ~07:00 w Polsce (lato)
-  workflow_dispatch:        # pozwala uruchomic recznie z zakladki Actions
+  workflow_dispatch:        # reczne uruchomienie (zakladka Actions) oraz z apki przez Worker
+    inputs:
+      days:
+        description: "Ile dni wstecz pobrac (puste = pelne 120, scala z historia)"
+        required: false
+        default: ""
 
 permissions:
   contents: write           # potrzebne, by zacommitowac plik z danymi
@@ -19,6 +24,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Zaleznosci
         run: pip install -r requirements.txt
@@ -31,6 +37,7 @@ jobs:
       - name: Pobierz dane z Garmina
         env:
           DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}
+          DNI_OVERRIDE: ${{ github.event.inputs.days }}
         run: python update_garmin.py
 
       - name: Zacommituj zmiany

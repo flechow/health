@@ -163,15 +163,53 @@ def score_map(resp, *score_keys):
     return out
 
 
-# ===================== glowna =====================
-def main():
-    g = Garmin()
-    g.login(TOKENY)
+# ===================== szyfrowanie =====================
+def _kdf(passphrase, salt, iters):
+    return hashlib.pbkdf2_hmac("sha256", passphrase.encode("utf-8"), salt, iters, dklen=32)
 
-    today = date.today()
-    start = (today - timedelta(days=DNI)).isoformat()
-    koniec = today.isoformat()
+def encrypt_rows(rows, passphrase, iters=200000):
+    plaintext = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    salt, iv = os.urandom(16), os.urandom(12)
+    ct = AESGCM(_kdf(passphrase, salt, iters)).encrypt(iv, plaintext, None)
+    return {"v": 1, "kdf": "PBKDF2-SHA256", "iter": iters,
+            "salt": base64.b64encode(salt).decode(),
+            "iv": base64.b64encode(iv).decode(),
+            "ct": base64.b64encode(ct).decode()}
 
+def decrypt_blob(blob, passphrase):
+    salt = base64.b64decode(blob["salt"]); iv = base64.b64decode(blob["iv"]); ct = base64.b64decode(blob["ct"])
+    pt = AESGCM(_kdf(passphrase, salt, int(blob.get("iter", 200000)))).decrypt(iv, ct, None)
+    return json.loads(pt.decode("utf-8"))
+
+def load_existing_rows(passphrase):
+    """Wczytuje i odszyfrowuje istniejacy PLIK (do scalania w trybie szybkim). Pusto, gdy brak/blad."""
+    try:
+        with open(PLIK, "r", encoding="utf-8") as f:
+            blob = json.load(f)
+    except FileNotFoundError:
+        return []
+    except Exception as e:
+        print("Nie udalo sie wczytac istniejacego pliku:", e); return []
+    try:
+        if isinstance(blob, list):        # zgodnosc wsteczna: kiedys niezaszyfrowana tablica
+            return blob
+        if isinstance(blob, dict) and blob.get("ct"):
+            return decrypt_blob(blob, passphrase)
+    except Exception as e:
+        print("Nie udalo sie odszyfrowac istniejacego pliku (zmiana hasla?):", e)
+    return []
+
+def merge_rows(old, new):
+    """Scala historie: swieze dni (new) nadpisuja stare wpisy o tej samej dacie, reszta zostaje."""
+    by = {r["data"]: r for r in old if isinstance(r, dict) and r.get("data")}
+    for r in new:
+        if isinstance(r, dict) and r.get("data"):
+            by[r["data"]] = r
+    return sorted(by.values(), key=lambda x: x["data"])
+
+
+# ===================== budowanie wierszy =====================
+def build_rows(g, start, koniec):
     wmap = {}
     wi = bezp(g.get_weigh_ins, start, koniec)
     if isinstance(wi, dict):
@@ -187,9 +225,12 @@ def main():
     endurance = score_map(bezp(g.get_endurance_score, start, koniec), "overallScore", "enduranceScore")
     hill = score_map(bezp(g.get_hill_score, start, koniec), "overallScore", "hillScore", "strengthScore")
 
+    end_d = date.fromisoformat(koniec)
+    n = (end_d - date.fromisoformat(start)).days + 1
+
     rows = []
-    for i in range(DNI):
-        d = (today - timedelta(days=i)).isoformat()
+    for i in range(n):
+        d = (end_d - timedelta(days=i)).isoformat()
         r = {"data": d, "waga": None, "kroki": None, "dystans_km": None, "kcal_aktywne": None,
              "pietra": None, "min_intensywne": None, "rhr": None, "hr_max": None, "hr_min": None,
              "stres": None, "stres_max": None, "bb_max": None, "bb_min": None,
@@ -279,9 +320,11 @@ def main():
         time.sleep(PAUZA)
 
     rows.sort(key=lambda x: x["data"])
+    return rows
 
-    # --- szyfrowanie AES-256-GCM (klucz z hasla przez PBKDF2) ---
-    plaintext = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+# ===================== glowna =====================
+def main():
     passphrase = os.environ.get("DATA_PASSPHRASE")
     if not passphrase:
         if sys.stdin and sys.stdin.isatty():
@@ -289,19 +332,45 @@ def main():
         else:
             raise SystemExit("BLAD: brak DATA_PASSPHRASE w srodowisku. "
                              "Ustaw sekret i przekaz go przez 'env:' w kroku workflow.")
-    ITER = 200000
-    salt, iv = os.urandom(16), os.urandom(12)
-    key = hashlib.pbkdf2_hmac("sha256", passphrase.encode("utf-8"), salt, ITER, dklen=32)
-    ct = AESGCM(key).encrypt(iv, plaintext, None)
-    blob = {"v": 1, "kdf": "PBKDF2-SHA256", "iter": ITER,
-            "salt": base64.b64encode(salt).decode(),
-            "iv": base64.b64encode(iv).decode(),
-            "ct": base64.b64encode(ct).decode()}
+
+    # DNI_OVERRIDE (z workflow_dispatch input 'days'): szybkie odswiezanie tylko ostatnich N dni,
+    # scalane z historia z istniejacego pliku. Puste => pelne pobranie DNI dni (cron).
+    override = (os.environ.get("DNI_OVERRIDE") or "").strip()
+    fast, dni = False, DNI
+    if override:
+        try:
+            v = int(override)
+            if v > 0:
+                dni, fast = v, True
+        except ValueError:
+            pass
+
+    g = Garmin()
+    g.login(TOKENY)
+
+    today = date.today()
+    koniec = today.isoformat()
+    start = (today - timedelta(days=dni - 1)).isoformat()
+
+    rows = build_rows(g, start, koniec)
+
+    if fast:
+        old = load_existing_rows(passphrase)
+        if old and len(old) >= len(rows):
+            rows = merge_rows(old, rows)
+            print(f"Tryb szybki: scalono {dni} swiezych dni z historia ({len(old)}) -> {len(rows)} dni")
+        else:
+            # Brak uzytecznej historii — zeby jej nie utracic, dociagamy pelne dane.
+            print("Tryb szybki bez historii — dociagam pelne dane, by jej nie skasowac.")
+            start = (today - timedelta(days=DNI - 1)).isoformat()
+            rows = build_rows(g, start, koniec)
+
+    blob = encrypt_rows(rows, passphrase)
     with open(PLIK, "w", encoding="utf-8") as f:
         json.dump(blob, f, separators=(",", ":"))
 
     def cnt(k):
-        return sum(1 for r in rows if r[k] not in (None, ""))
+        return sum(1 for r in rows if r.get(k) not in (None, ""))
     print(f"Zapisano {PLIK}: {len(rows)} dni")
     for k in ("waga", "hrv", "temp_noc", "miejsce", "body_fat", "training_status"):
         print(f"  {k}: {cnt(k)}")

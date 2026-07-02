@@ -71,6 +71,20 @@
   .foot{text-align:center; color:var(--mut2); font-size:11px; margin-top:18px;}
   .stamp{font-size:11px; color:var(--mut2); margin-top:10px;}
   svg{display:block; width:100%;}
+  .wk{font-size:12px; color:var(--mut); margin-top:2px;}
+  .ex{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0;}
+  .ex+.ex{border-top:1px solid #1f1f1f;}
+  .ex .exn{font-size:14px; font-weight:500;}
+  .ex .exs{font-size:12px; color:var(--mut2); margin-top:2px;}
+  .ex .exw{display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto;}
+  .ex input{width:88px; background:#232323; border:1px solid #2f2f2f; border-radius:10px;
+    padding:9px; color:var(--tx); font-size:15px; text-align:right; outline:none;}
+  .ex input:focus{border-color:var(--amber);}
+  .ex .last{font-size:11px; color:var(--mut2); margin-top:3px;}
+  button.refresh{width:100%; border:0; border-radius:14px; padding:14px; font-size:14px; font-weight:600;
+    margin-top:12px; cursor:pointer; color:var(--tx); background:#232323; transition:.15s;}
+  button.refresh:active{background:#2c2c2c;}
+  button.refresh:disabled{opacity:.55; cursor:default;}
 </style>
 </head>
 <body>
@@ -79,16 +93,61 @@
 
 <script>
 const START=116, GOAL=90;
-const PLAN={
- 1:{n:"Zone 2 — orbitrek",d:"35 min · tętno 125–140 · oddech nosem",i:"🚴",k:"cardio"},
- 2:{n:"Siła A — full body",d:"Przysiad goblet · wiosłowanie · wyciskanie · plank",i:"💪",k:"strength"},
- 3:{n:"Zone 2 — bieżnia",d:"35 min · marsz pod górę lub trucht",i:"🏃",k:"cardio"},
- 4:{n:"Siła B — full body",d:"Martwy ciąg RUM · wykrok · pompki · farmer",i:"💪",k:"strength"},
- 5:{n:"Zone 2 — dowolnie",d:"35–40 min · spokojnie",i:"🚴",k:"cardio"},
- 6:{n:"Długi marsz / Zone 2",d:"45–60 min · można rodzinnie",i:"🚶",k:"cardio"},
- 0:{n:"Regeneracja",d:"Spacer z psami · mobilność · rozciąganie",i:"🧘",k:"rest"}
-};
 const WL=["Pn","Wt","Śr","Cz","Pt","So","Nd"];
+
+// Plan treningowy. ZRODLO PRAWDY to plik plan.json (pobierany przy kazdym wejsciu).
+// DEFAULT_PLAN to tylko kopia awaryjna na offline / pierwsze uruchomienie — edytuj plan.json, nie to.
+const DEFAULT_PLAN={
+ goal:{start:116,target:90}, activePhase:1,
+ phases:[
+  { id:1, subtitle:"Faza 1", name:"Baza tlenowa", startDate:"2026-06-29", weeks:10,
+    focus:"Silnik tlenowy + wzorce ruchowe.",
+    cardio:{baseMin:35,stepMin:5,everyWeeks:2,capMin:50,zone:"tętno 125–140 · oddech nosem"},
+    days:{
+     "1":{type:"cardio",name:"Zone 2 — orbitrek",icon:"🚴",detail:"spokojne, równe tempo"},
+     "2":{type:"strength",name:"Siła A — full body",icon:"💪",detail:"tempo spokojne, pełen zakres ruchu",exercises:[
+        {id:"a-squat",name:"Przysiad goblet",scheme:"3×10",note:"2 powt. w zapasie"},
+        {id:"a-row",name:"Wiosłowanie hantlą",scheme:"3×10",note:"łopatki ściągnięte"},
+        {id:"a-press",name:"Wyciskanie nad głowę",scheme:"3×10",note:"brzuch napięty"},
+        {id:"a-plank",name:"Plank",scheme:"3×30 s",note:"biodra w linii"}]},
+     "3":{type:"cardio",name:"Zone 2 — bieżnia",icon:"🏃",detail:"marsz pod górę lub lekki trucht"},
+     "4":{type:"strength",name:"Siła B — full body",icon:"💪",detail:"tempo spokojne, pełen zakres ruchu",exercises:[
+        {id:"b-rdl",name:"Martwy ciąg rumuński",scheme:"3×10",note:"plecy proste"},
+        {id:"b-lunge",name:"Wykrok",scheme:"3×10/nogę",note:"kolano nad kostką"},
+        {id:"b-push",name:"Pompki (lub z kolan)",scheme:"3×max",note:"zapisz liczbę powt."},
+        {id:"b-farmer",name:"Farmer's walk",scheme:"3×40 m",note:"sylwetka wyprostowana"}]},
+     "5":{type:"cardio",name:"Zone 2 — dowolnie",icon:"🚴",detail:"spokojnie, cokolwiek lubisz"},
+     "6":{type:"cardio",name:"Długi marsz / Zone 2",icon:"🚶",detail:"można rodzinnie",extraMin:15},
+     "0":{type:"rest",name:"Regeneracja",icon:"🧘",detail:"spacer z psami · mobilność · rozciąganie"}
+    }}
+ ]};
+let PLANDATA=DEFAULT_PLAN;
+
+function activePhase(){ const p=(PLANDATA&&PLANDATA.phases)||[]; return p.find(x=>x.id===PLANDATA.activePhase)||p[0]||null; }
+function phaseWeek(ph){
+  if(!ph||!ph.startDate) return 1;
+  const s=new Date(ph.startDate+"T00:00:00");
+  if(isNaN(s)) return 1;
+  const w=Math.floor((Date.now()-s.getTime())/(7*86400000))+1;
+  return Math.max(1, Math.min(w, ph.weeks||99));
+}
+function cardioMin(ph, wk, day){
+  const c=(ph&&ph.cardio)||{}; let m=(c.baseMin||35);
+  if(c.stepMin&&c.everyWeeks) m+=c.stepMin*Math.floor((wk-1)/c.everyWeeks);
+  if(c.capMin) m=Math.min(m,c.capMin);
+  if(day&&day.extraMin) m+=day.extraMin;
+  return m;
+}
+function buildSession(ph, wk, dow){
+  const day=(ph&&ph.days&&ph.days[String(dow)]) || {type:"rest",name:"Regeneracja",icon:"🧘",detail:"mobilność · rozciąganie"};
+  const s={kind:day.type, name:day.name, icon:day.icon||"•", detail:day.detail||"", exercises:day.exercises||null};
+  if(day.type==="cardio"){
+    const m=cardioMin(ph,wk,day), zone=(ph&&ph.cardio&&ph.cardio.zone)||"";
+    s.durationMin=m;
+    s.detail=(day.detail?day.detail+" · ":"")+m+" min"+(zone?" · "+zone:"");
+  }
+  return s;
+}
 
 // ===== Adaptacyjna decyzja treningowa (progi do wspoldzielenia z przyszlym plan.py 'decide') =====
 const DEC={ readyRed:35, readyYel:58, hrvRedFrac:0.82, hrvYelFrac:0.92, rhrRedDelta:7, rhrYelDelta:4, sleepRed:5.0, sleepYel:6.2 };
@@ -96,7 +155,7 @@ function baseline(rows, field, n){
   const a=rows.slice(0,-1).map(r=>r[field]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
   return a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
 }
-function decideJS(plan, rows){
+function decide(base, rows){
   const r=rows[rows.length-1]||{};
   const hrvBase=baseline(rows,"hrv",7), rhrBase=baseline(rows,"rhr",7);
   const st=(r.status||"").toUpperCase();
@@ -108,19 +167,20 @@ function decideJS(plan, rows){
   if(r.sen!=null){ if(r.sen<DEC.sleepRed)bump(2,`sen ${r.sen} h`); else if(r.sen<DEC.sleepYel)bump(1,`sen ${r.sen} h`); }
   if(r.rhr!=null&&rhrBase){ if(r.rhr>rhrBase+DEC.rhrRedDelta)bump(2,`tętno sp. ${Math.round(r.rhr)} (baza ${Math.round(rhrBase)})`); else if(r.rhr>rhrBase+DEC.rhrYelDelta)bump(1,`tętno sp. ${Math.round(r.rhr)}`); }
 
+  const planName=base.name;
   const haveAny = r.gotowosc!=null||r.hrv!=null||r.sen!=null;
-  if(!haveAny) return {dot:"⚪",tag:"Brak danych",session:plan,swapped:false,planName:plan.n,why:"brak danych regeneracji — plan bazowy"};
+  if(!haveAny) return {dot:"⚪",tag:"Brak danych",session:base,swapped:false,planName,why:"brak danych regeneracji — plan bazowy"};
 
-  const REST={n:"Regeneracja",d:"Spacer · mobilność · rozciąganie · oddech",i:"🧘",k:"rest"};
-  const Z2={n:"Zone 2 — spokojnie",d:"30–35 min · tętno 125–140 · oddech nosem",i:"🚴",k:"cardio"};
-  let session=plan, dot, tag;
-  if(level>=2){ dot="🔴"; tag="Regeneracja"; if(plan.k!=="rest")session=REST; }
+  const REST={kind:"rest",name:"Regeneracja",icon:"🧘",detail:"spacer · mobilność · rozciąganie · oddech",exercises:null};
+  const Z2={kind:"cardio",name:"Zone 2 — spokojnie",icon:"🚴",detail:"30–35 min · tętno 125–140 · oddech nosem",exercises:null};
+  let session=base, dot, tag;
+  if(level>=2){ dot="🔴"; tag="Regeneracja"; if(base.kind!=="rest")session=REST; }
   else if(level===1){ dot="🟡"; tag="Lekko";
-    if(plan.k==="strength")session=Z2;
-    else if(plan.k==="cardio")session={...plan,d:plan.d+" · dziś krócej"}; }
-  else { dot="🟢"; tag="Gotowy"; if(plan.k==="strength")session={...plan,d:plan.d+" · możesz docisnąć"}; }
+    if(base.kind==="strength")session=Z2;
+    else if(base.kind==="cardio")session={...base,detail:base.detail+" · dziś krócej"}; }
+  else { dot="🟢"; tag="Gotowy"; if(base.kind==="strength")session={...base,detail:(base.detail?base.detail+" · ":"")+"możesz docisnąć"}; }
 
-  const swapped = session.n!==plan.n;
+  const swapped = session.name!==base.name;
   let why_txt;
   if(level===0){
     const good=[]; if(r.gotowosc!=null)good.push(`gotowość ${Math.round(r.gotowosc)}`); if(r.hrv!=null)good.push(`HRV ${Math.round(r.hrv)} ms`); if(r.sen!=null)good.push(`sen ${r.sen} h`);
@@ -130,10 +190,23 @@ function decideJS(plan, rows){
     const tail = level>=2 ? "dziś regeneracja, nie siła" : (swapped?"ścinamy do Zone 2":"trzymaj lekko");
     why_txt = top.join(", ")+" → "+tail;
   }
-  return {dot,tag,session,swapped,planName:plan.n,why:why_txt};
+  return {dot,tag,session,swapped,planName,why:why_txt};
 }
 
-let log = load('fit-log-v1', {days:{},weights:{}});
+// Ostatni zapisany ciezar dla cwiczenia (log.ex[id] = {kg, d}).
+function lastWeight(exId){ const h=log.ex&&log.ex[exId]; return (h&&h.kg!=null)?h:null; }
+function exRow(ex, tk){
+  const lw=lastWeight(ex.id);
+  const phv=lw?String(lw.kg):"";
+  const lastTxt=lw?`ost. ${lw.kg} kg${lw.d&&lw.d!==tk?" · "+lw.d.slice(5):""}`:(ex.note||"");
+  return `<div class="ex"><div><div class="exn">${ex.name}</div>
+      <div class="exs">${ex.scheme}${(ex.note&&lw)?" · "+ex.note:""}</div></div>
+    <div class="exw"><input type="text" inputmode="decimal" data-ex="${ex.id}" placeholder="${phv||"kg"}" />
+      <div class="last">${lastTxt}</div></div></div>`;
+}
+
+let log = load('fit-log-v1', {days:{},weights:{},ex:{}});
+if(!log.ex) log.ex={};
 let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
 try{ localStorage.removeItem('garmin-v1'); localStorage.removeItem('data-pass'); }catch(e){}  // wyczysc stare cache danych i haslo ze starej wersji
 
@@ -220,9 +293,10 @@ function renderLocked(){
 }
 
 function render(){
-  const t=new Date(), tk=key(t), te=log.days[tk]||{}, pl=PLAN[t.getDay()];
+  const t=new Date(), tk=key(t), te=log.days[tk]||{};
   if(!(gar&&gar.rows&&gar.rows.length)){ renderLocked(); return; }  // nic osobistego bez odszyfrowania
   const rows=gar.rows;
+  const ph=activePhase(), wk=phaseWeek(ph), baseSession=buildSession(ph, wk, t.getDay());
   const lastOf=(k)=>{for(let i=rows.length-1;i>=0;i--){const v=rows[i][k]; if(v!=null&&v!==""&&!isNaN(v))return +v;}return null;};
   const meanTail=(k,n)=>{const a=rows.map(r=>r[k]).filter(x=>x!=null&&!isNaN(x)).slice(-n); return a.length?a.reduce((s,x)=>s+x,0)/a.length:null;};
   const hrvNow=meanTail("hrv",7), stepsNow=meanTail("kroki",7), vo2Now=lastOf("vo2max");
@@ -233,13 +307,14 @@ function render(){
   const toGoal=Math.round((cur-GOAL)*10)/10;
   const mon=monday(t), wd=[...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
   const trained=wd.slice(0,6).filter(d=>(log.days[key(d)]||{}).trained).length;
-  const dec = decideJS(pl, rows);
-  const doneTxt = dec.session.k==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
-                                         : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
+  const dec = decide(baseSession, rows);
+  const isStrength = dec.session.kind==="strength" && dec.session.exercises && dec.session.exercises.length;
+  const doneTxt = dec.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
+                                            : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
 
   document.getElementById("app").innerHTML = `
     <p class="eyebrow">Protokół metaboliczny</p>
-    <h1>Faza 1 · Baza tlenowa</h1>
+    <h1>${ph.subtitle} · ${ph.name}</h1>
 
     <div class="card">
       <div class="big mono">${(Math.round(cur*10)/10).toFixed(1)}<span style="font-size:18px;color:var(--mut)"> kg</span></div>
@@ -251,11 +326,13 @@ function render(){
     <div class="card">
       <div class="between"><p class="label">Dziś · ${WL[(t.getDay()+6)%7]}</p>
         <span style="font-size:13px">${dec.dot} <b style="color:var(--tx)">${dec.tag}</b></span></div>
-      <div class="row"><div class="ic">${dec.session.i}</div><div>
-        <div class="plan-name">${dec.session.n}</div>
-        <div class="plan-det">${dec.session.d}</div>
+      <div class="wk">${ph.subtitle} · Tydzień ${wk}${ph.weeks?" / "+ph.weeks:""}</div>
+      <div class="row"><div class="ic">${dec.session.icon}</div><div style="flex:1">
+        <div class="plan-name">${dec.session.name}</div>
+        <div class="plan-det">${dec.session.detail||""}</div>
         ${dec.swapped?`<div class="plan-det" style="color:var(--mut2)">plan na dziś: ${dec.planName}</div>`:""}
       </div></div>
+      ${isStrength?`<div style="margin-top:8px">${dec.session.exercises.map(ex=>exRow(ex,tk)).join("")}</div>`:""}
       <div class="sub" style="margin-top:10px">${dec.why}</div>
       <button class="act ${te.trained?"done":""}" data-x="trained">${doneTxt}</button>
       <button class="act sleep ${te.sleptEarly?"on":""}" data-x="sleptEarly">${te.sleptEarly?"😴 W łóżku przed 22:00":"W łóżku przed 22:00?"}</button>
@@ -279,8 +356,10 @@ function render(){
 
     ${garminCard()}
 
-    <label class="imp" id="impbtn">📥 ${gar?"Zaktualizuj dane z Garmina":"Importuj dane Garmina"} <b>(CSV)</b><br>
-      <span style="font-size:12px">plik garmin_export.csv z Colab</span></label>
+    ${gar?`<button class="refresh" id="refreshBtn">🔄 Odśwież dane z Garmina</button>`:""}
+
+    <label class="imp" id="impbtn">📥 Import z pliku <b>(CSV)</b><br>
+      <span style="font-size:12px">awaryjnie: garmin_export.csv z Colab</span></label>
 
     <div class="card">
       <p class="label">Cele fazy 1 (8–12 tyg.)</p>
@@ -299,6 +378,14 @@ function render(){
   const ws=document.getElementById("wsave"), wi=document.getElementById("w");
   ws.onclick=()=>{const v=parseFloat((wi.value||"").replace(",",".")); if(!v||v<40||v>250)return; log.weights[tk]=Math.round(v*10)/10; save("fit-log-v1",log); render();};
   wi.onkeydown=(e)=>{if(e.key==="Enter")ws.onclick();};
+  document.querySelectorAll("input[data-ex]").forEach(inp=>{
+    inp.onkeydown=(e)=>{ if(e.key==="Enter") inp.blur(); };
+    inp.onchange=()=>{ const id=inp.getAttribute("data-ex");
+      const v=parseFloat((inp.value||"").replace(",",".")); if(!v||v<=0||v>500) return;
+      if(!log.ex)log.ex={}; log.ex[id]={kg:Math.round(v*10)/10,d:tk}; save("fit-log-v1",log); render(); };
+  });
+  const rb=document.getElementById("refreshBtn");
+  if(rb){ rb.onclick=refreshFromGarmin; if(refreshing) setRefreshLabel("Aktualizuję… (do ~3 min)", true); }
   document.getElementById("impbtn").onclick=()=>document.getElementById("csv").click();
 }
 
@@ -342,6 +429,66 @@ function parseCSV(text){
 // Nazwa pliku z danymi z Garmina — MUSI byc taka sama jak PLIK w update_garmin.py.
 const DATA_URL="garmin-7c1f93a2.json";
 
+// === Plan treningowy z pliku plan.json (zrodlo prawdy; DEFAULT_PLAN to fallback) ===
+async function fetchPlan(){
+  try{
+    const res=await fetch("plan.json?t="+Date.now(),{cache:"no-store"});
+    if(!res.ok) return;
+    const p=await res.json();
+    if(p&&Array.isArray(p.phases)&&p.phases.length){ PLANDATA=p; if(gar&&gar.rows&&gar.rows.length) render(); }
+  }catch(e){}
+}
+
+// === Odswiezanie na zadanie: przycisk -> Worker (autoryzacja hashem hasla) -> GitHub Actions -> nowy plik ===
+// USTAW adres swojego Cloudflare Workera (patrz REFRESH_SETUP.md). Dopoki placeholder, przycisk poinformuje o braku konfiguracji.
+const REFRESH_URL="https://REPLACE-ME.workers.dev";
+const REFRESH_SALT="protokol-refresh-auth-v1", REFRESH_ITER=100000;   // MUSI zgadzac sie z derive-auth.mjs
+let lastCt=null, refreshing=false;
+const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+
+async function deriveAuth(pass){
+  const bk=await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"]);
+  const bits=await crypto.subtle.deriveBits(
+    {name:"PBKDF2", salt:new TextEncoder().encode(REFRESH_SALT), iterations:REFRESH_ITER, hash:"SHA-256"}, bk, 256);
+  return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function setRefreshLabel(txt, disabled){ const b=document.getElementById("refreshBtn"); if(b){ b.textContent=txt; b.disabled=!!disabled; } }
+
+async function refreshFromGarmin(){
+  if(refreshing) return;
+  const pass=getPass();
+  if(!pass){ alert("Najpierw odblokuj dane hasłem, potem odśwież."); return; }
+  if(!REFRESH_URL || REFRESH_URL.indexOf("REPLACE-ME")>=0){
+    alert("Brak skonfigurowanego adresu Workera.\nUzupełnij REFRESH_URL w index.html (instrukcja: REFRESH_SETUP.md)."); return; }
+  refreshing=true; setRefreshLabel("Uruchamiam aktualizację…", true);
+  let auth;
+  try{ auth=await deriveAuth(pass); }
+  catch(e){ refreshing=false; setRefreshLabel("🔄 Odśwież dane z Garmina", false); alert("Nie udało się przygotować autoryzacji (wymaga HTTPS)."); return; }
+  try{
+    const res=await fetch(REFRESH_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({auth})});
+    if(res.status===401) throw new Error("Odmowa: hasło nie pasuje do konfiguracji Workera.");
+    if(!res.ok) throw new Error("Worker zwrócił błąd ("+res.status+").");
+  }catch(e){ refreshing=false; setRefreshLabel("🔄 Odśwież dane z Garmina", false); alert(e.message||"Błąd sieci przy uruchamianiu aktualizacji."); return; }
+  // Czekamy, az GitHub Actions zapisze nowy plik (nowy commit -> zmienione 'ct').
+  setRefreshLabel("Aktualizuję… (do ~3 min)", true);
+  const started=Date.now(), MAXMS=6*60*1000;
+  while(Date.now()-started<MAXMS){
+    await sleep(12000);
+    try{
+      const res=await fetch(DATA_URL+"?t="+Date.now(),{cache:"no-store"});
+      if(res.ok){
+        const blob=await res.json();
+        if(blob && blob.ct && blob.ct!==lastCt){
+          const rows=await decryptBlob(blob, pass);
+          if(Array.isArray(rows)&&rows.length){ lastCt=blob.ct; gar={importedAt:Date.now(),rows,source:"auto"}; refreshing=false; render(); return; }
+        }
+      }
+    }catch(e){}
+  }
+  refreshing=false; setRefreshLabel("🔄 Odśwież dane z Garmina", false);
+  alert("Aktualizacja trwa dłużej niż zwykle. Nowe dane pojawią się po zakończeniu zadania — odśwież ekran za chwilę.");
+}
+
 // --- Deszyfrowanie (zgodne 1:1 z update_garmin.py: PBKDF2-SHA256 -> AES-256-GCM) ---
 function b64ToBytes(s){ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i); return u; }
 async function decryptBlob(blob, pass){
@@ -377,6 +524,7 @@ async function fetchRemote(){
       const rows=await decryptBlob(blob, pass);
       if(Array.isArray(rows)&&rows.length){
         setPass(pass);
+        lastCt=blob.ct;
         gar={importedAt:Date.now(),rows,source:"auto"};   // tylko w pamieci
         render();
       }
@@ -386,6 +534,7 @@ async function fetchRemote(){
   alert("Nie udalo sie odszyfrowac danych (bledne haslo?).");
 }
 render();
+fetchPlan();
 fetchRemote();
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));

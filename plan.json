@@ -1,0 +1,69 @@
+{
+  "_opis": "Plan treningowy Protokołu 116→90. Edytuj ten plik, gdy chcesz zmienić treningi lub przejść do kolejnej fazy. 'activePhase' = numer aktywnej fazy. W każdej fazie 'startDate' (poniedziałek startu) służy do liczenia numeru tygodnia i progresji Zone 2. Dni tygodnia: 1=Pn 2=Wt 3=Śr 4=Cz 5=Pt 6=So 0=Nd.",
+  "goal": { "start": 116, "target": 90 },
+  "activePhase": 1,
+  "phases": [
+    {
+      "id": 1,
+      "subtitle": "Faza 1",
+      "name": "Baza tlenowa",
+      "startDate": "2026-06-29",
+      "weeks": 10,
+      "focus": "Zbudować silnik tlenowy i wzorce ruchowe. Objętość Zone 2 rośnie stopniowo; na siłowni najpierw technika, potem dokładamy ciężar.",
+      "cardio": { "baseMin": 35, "stepMin": 5, "everyWeeks": 2, "capMin": 50, "zone": "tętno 125–140 · oddech nosem" },
+      "days": {
+        "1": { "type": "cardio", "name": "Zone 2 — orbitrek", "icon": "🚴", "detail": "spokojne, równe tempo" },
+        "2": { "type": "strength", "name": "Siła A — full body", "icon": "💪", "detail": "tempo spokojne, pełen zakres ruchu",
+          "exercises": [
+            { "id": "a-squat",  "name": "Przysiad goblet",        "scheme": "3×10", "note": "ciężar tak, by zostały 2 powt. w zapasie" },
+            { "id": "a-row",    "name": "Wiosłowanie hantlą",     "scheme": "3×10", "note": "łopatki ściągnięte" },
+            { "id": "a-press",  "name": "Wyciskanie nad głowę",   "scheme": "3×10", "note": "brzuch napięty" },
+            { "id": "a-plank",  "name": "Plank",                  "scheme": "3×30 s", "note": "biodra w linii" }
+          ]
+        },
+        "3": { "type": "cardio", "name": "Zone 2 — bieżnia", "icon": "🏃", "detail": "marsz pod górę lub lekki trucht" },
+        "4": { "type": "strength", "name": "Siła B — full body", "icon": "💪", "detail": "tempo spokojne, pełen zakres ruchu",
+          "exercises": [
+            { "id": "b-rdl",    "name": "Martwy ciąg rumuński",  "scheme": "3×10", "note": "plecy proste, ciężar wzdłuż nóg" },
+            { "id": "b-lunge",  "name": "Wykrok",                "scheme": "3×10/nogę", "note": "kolano nad kostką" },
+            { "id": "b-push",   "name": "Pompki (lub z kolan)",  "scheme": "3×max", "note": "zapisz liczbę powtórzeń" },
+            { "id": "b-farmer", "name": "Farmer's walk",         "scheme": "3×40 m", "note": "sylwetka wyprostowana" }
+          ]
+        },
+        "5": { "type": "cardio", "name": "Zone 2 — dowolnie", "icon": "🚴", "detail": "spokojnie, cokolwiek lubisz" },
+        "6": { "type": "cardio", "name": "Długi marsz / Zone 2", "icon": "🚶", "detail": "można rodzinnie", "extraMin": 15 },
+        "0": { "type": "rest", "name": "Regeneracja", "icon": "🧘", "detail": "spacer z psami · mobilność · rozciąganie" }
+      }
+    },
+    {
+      "id": 2,
+      "subtitle": "Faza 2",
+      "name": "Rozbudowa",
+      "startDate": null,
+      "weeks": 8,
+      "focus": "SZKIC — do wspólnego dopracowania. Utrzymujemy Zone 2, dokładamy 1× w tygodniu tempo/próg oraz progresję siły (więcej serii/ciężaru). Ustaw startDate i activePhase=2, gdy zaczniesz.",
+      "cardio": { "baseMin": 40, "stepMin": 5, "everyWeeks": 3, "capMin": 55, "zone": "tętno 125–140 · oddech nosem" },
+      "days": {
+        "1": { "type": "cardio", "name": "Zone 2 — orbitrek", "icon": "🚴", "detail": "spokojne tempo" },
+        "2": { "type": "strength", "name": "Siła A — dół + push", "icon": "💪", "detail": "docisk vs Faza 1",
+          "exercises": [
+            { "id": "a-squat",  "name": "Przysiad (goblet/sztanga)", "scheme": "4×8" },
+            { "id": "a-press",  "name": "Wyciskanie nad głowę",      "scheme": "4×8" },
+            { "id": "a-plank",  "name": "Plank",                     "scheme": "3×45 s" }
+          ]
+        },
+        "3": { "type": "cardio", "name": "Interwał tempo", "icon": "⚡", "detail": "SZKIC: 5×3 min szybciej / 2 min luz — dopracujemy" },
+        "4": { "type": "strength", "name": "Siła B — pull + zawias", "icon": "💪", "detail": "docisk vs Faza 1",
+          "exercises": [
+            { "id": "b-rdl",    "name": "Martwy ciąg rumuński", "scheme": "4×8" },
+            { "id": "b-row",    "name": "Wiosłowanie",          "scheme": "4×8" },
+            { "id": "b-farmer", "name": "Farmer's walk",        "scheme": "3×50 m" }
+          ]
+        },
+        "5": { "type": "cardio", "name": "Zone 2 — dowolnie", "icon": "🚴", "detail": "spokojnie" },
+        "6": { "type": "cardio", "name": "Długi marsz / Zone 2", "icon": "🚶", "detail": "można rodzinnie", "extraMin": 15 },
+        "0": { "type": "rest", "name": "Regeneracja", "icon": "🧘", "detail": "mobilność · rozciąganie" }
+      }
+    }
+  ]
+}
