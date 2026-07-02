@@ -85,6 +85,80 @@
     margin-top:12px; cursor:pointer; color:var(--tx); background:#232323; transition:.15s;}
   button.refresh:active{background:#2c2c2c;}
   button.refresh:disabled{opacity:.55; cursor:default;}
+  /* Silnik Dnia */
+  .hero{display:flex; gap:16px; align-items:center; margin-top:14px;}
+  .ringwrap{flex:0 0 auto;}
+  .htxt{flex:1; min-width:0;}
+  .focus-t{font-size:17px; font-weight:600; letter-spacing:-.01em; line-height:1.2;}
+  .focus-w{font-size:13px; color:var(--mut); margin-top:5px; line-height:1.45;}
+  .zonepill{display:inline-block; font-size:11px; font-weight:600; padding:3px 10px; border-radius:999px;}
+  .z-green{background:rgba(16,185,129,.15); color:#34d399;}
+  .z-yellow{background:rgba(245,158,11,.16); color:#fbbf24;}
+  .z-red{background:rgba(239,68,68,.15); color:#f87171;}
+  .z-none{background:#232323; color:var(--mut);}
+  .intens{display:flex; gap:8px; align-items:baseline; margin-top:12px; padding:11px 13px;
+    background:var(--card2); border-radius:12px; font-size:13px; color:var(--tx); line-height:1.4;}
+  .intens .il{color:var(--amber-l); font-size:10.5px; font-weight:600; text-transform:uppercase;
+    letter-spacing:.08em; flex:0 0 auto;}
+  .facts{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;}
+  .fact{display:flex; align-items:center; gap:6px; font-size:11.5px; background:var(--card2);
+    border:1px solid var(--bd); border-radius:999px; padding:4px 10px; color:var(--mut);}
+  .fact b{color:var(--tx); font-weight:600;}
+  .fdot{width:7px; height:7px; border-radius:999px; flex:0 0 auto;}
+  /* Progresja siły */
+  .exhist{font-size:11.5px; color:var(--mut2); margin-top:4px; font-variant-numeric:tabular-nums;}
+  .chip{display:inline-block; background:rgba(245,158,11,.16); color:var(--amber-l); border-radius:8px;
+    padding:1px 7px; font-weight:600; font-size:11px;}
+  /* Etap 2 + interaktywne objaśnienia */
+  .info{display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px;
+    border-radius:999px; border:1px solid #3a3a3a; color:var(--mut2); font-size:10px; font-weight:700;
+    font-style:italic; margin-left:5px; vertical-align:middle; font-family:Georgia,serif;}
+  [data-info]{cursor:pointer;}
+  .prio{display:flex; gap:11px; align-items:flex-start; padding:11px 0;}
+  .prio+.prio{border-top:1px solid #1f1f1f;}
+  .prio .pic{font-size:20px; line-height:1.1; flex:0 0 auto;}
+  .prio .pt{font-size:14px; font-weight:600; line-height:1.25;}
+  .prio .pn{font-size:12.5px; color:var(--mut); margin-top:3px; line-height:1.4;}
+  .prio .rank{margin-left:auto; font-size:11px; color:var(--mut2); font-variant-numeric:tabular-nums; padding-top:2px;}
+  .acwr-top{display:flex; align-items:center; gap:11px; margin-top:8px;}
+  .acwr-v{font-size:34px; font-weight:600; line-height:1;}
+  .acwr-lab{font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px;}
+  .acwr-bar{position:relative; height:10px; border-radius:999px; background:#232323; margin-top:16px;}
+  .acwr-sweet{position:absolute; top:0; bottom:0; background:rgba(16,185,129,.30); border-radius:2px;}
+  .acwr-mark{position:absolute; top:-3px; width:3px; height:16px; border-radius:2px; background:var(--tx);}
+  .acwr-sc{display:flex; justify-content:space-between; font-size:11px; color:var(--mut2); margin-top:6px;}
+  .phase-card{background:linear-gradient(135deg,#1c1810,#161616); border-color:#3a2f14;}
+  .sheet{position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50; opacity:0; transition:opacity .18s;}
+  .sheet.on{opacity:1;}
+  .sheet-card{background:var(--card); border:1px solid var(--bd); border-bottom:0;
+    border-radius:20px 20px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom));
+    width:100%; max-width:460px; transform:translateY(100%); transition:transform .22s;
+    max-height:82vh; overflow-y:auto;}
+  .sheet.on .sheet-card{transform:translateY(0);}
+  .sheet .grip{width:38px; height:4px; border-radius:999px; background:#333; margin:0 auto 14px;}
+  .sheet h3{margin:0; font-size:18px; font-weight:600;}
+  .sheet .sbody{font-size:14px; color:var(--tx); line-height:1.55; margin-top:12px;}
+  .sheet .sbody p{margin:0 0 11px;}
+  .sheet .sbody .t{color:var(--amber-l); font-weight:600;}
+  .sheet .close{width:100%; margin-top:6px; border:0; border-radius:14px; padding:13px; font-size:15px;
+    font-weight:600; background:#232323; color:var(--tx); cursor:pointer;}
+  .toggle{display:inline-block; margin-top:8px; font-size:12px; color:var(--mut); cursor:pointer;
+    border:1px solid var(--bd); border-radius:999px; padding:6px 13px;}
+  .toggle b{color:var(--amber-l); font-weight:600;}
+  /* Postępy */
+  .seg{display:flex; gap:6px; background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:5px; margin-top:14px;}
+  .segb{flex:1; border:0; border-radius:10px; padding:10px; font-size:14px; font-weight:600; background:transparent; color:var(--mut); cursor:pointer;}
+  .segb.on{background:#232323; color:var(--tx);}
+  .trend{padding:12px 0;} .trend+.trend{border-top:1px solid #1f1f1f;}
+  .trend .n{font-size:14px; font-weight:500;}
+  .exprog{padding:12px 0;} .exprog+.exprog{border-top:1px solid #1f1f1f;}
+  .exprog .n{font-size:14px; font-weight:500;}
+  .bars{display:flex; align-items:flex-end; gap:6px; height:110px; margin-top:10px;}
+  .bar{flex:1; display:flex; flex-direction:column; align-items:center; height:100%;}
+  .bwrap{flex:1; width:100%; display:flex; align-items:flex-end; background:#1a1a1a; border-radius:6px; overflow:hidden;}
+  .bfill{width:100%; border-radius:6px 6px 0 0; min-height:2px;}
+  .blab{font-size:10px; color:var(--mut2); margin-top:5px; font-variant-numeric:tabular-nums;}
 </style>
 </head>
 <body>
@@ -94,6 +168,15 @@
 <script>
 const START=116, GOAL=90;
 const WL=["Pn","Wt","Śr","Cz","Pt","So","Nd"];
+
+// ===== FEATURE FLAG: interaktywne objaśnienia (dotknij metryki -> wytłumaczenie) =====
+// Domyślnie WŁĄCZONE. Możesz wyłączyć jednym dotknięciem w stopce apki (zapis w localStorage),
+// albo na stałe zmieniając poniższą wartość na false.
+const EXPLAIN_DEFAULT = true;
+function explainOn(){ const v=load('explain-v1', null); return v==null ? EXPLAIN_DEFAULT : !!v; }
+function setExplain(on){ save('explain-v1', !!on); }
+function ib(key){ return explainOn() ? ` <span class="info" data-info="${key}">i</span>` : ""; }   // znaczek + cel
+function ic(){ return explainOn() ? ` <span class="info">i</span>` : ""; }                          // sam znaczek (kontener ma data-info)
 
 // Plan treningowy. ZRODLO PRAWDY to plik plan.json (pobierany przy kazdym wejsciu).
 // DEFAULT_PLAN to tylko kopia awaryjna na offline / pierwsze uruchomienie — edytuj plan.json, nie to.
@@ -122,11 +205,24 @@ const DEFAULT_PLAN={
     }}
  ]};
 let PLANDATA=DEFAULT_PLAN;
+let view='today';                        // 'today' | 'progress' — przełącznik u góry
 
-function activePhase(){ const p=(PLANDATA&&PLANDATA.phases)||[]; return p.find(x=>x.id===PLANDATA.activePhase)||p[0]||null; }
+// Override auto-progresji faz (localStorage): {activePhase, starts:{ "<id>":"YYYY-MM-DD" }}
+function planOverride(){ return load('plan-override-v1', null); }
+function activePhase(){
+  const p=(PLANDATA&&PLANDATA.phases)||[];
+  const ov=planOverride();
+  const id=(ov&&ov.activePhase!=null)?ov.activePhase:PLANDATA.activePhase;
+  return p.find(x=>x.id===id)||p[0]||null;
+}
+function phaseStart(ph){
+  const ov=planOverride();
+  return (ov&&ov.starts&&ov.starts[ph.id]) || (ph&&ph.startDate) || null;
+}
 function phaseWeek(ph){
-  if(!ph||!ph.startDate) return 1;
-  const s=new Date(ph.startDate+"T00:00:00");
+  const sd=phaseStart(ph);
+  if(!ph||!sd) return 1;
+  const s=new Date(sd+"T00:00:00");
   if(isNaN(s)) return 1;
   const w=Math.floor((Date.now()-s.getTime())/(7*86400000))+1;
   return Math.max(1, Math.min(w, ph.weeks||99));
@@ -149,64 +245,148 @@ function buildSession(ph, wk, dow){
   return s;
 }
 
-// ===== Adaptacyjna decyzja treningowa (progi do wspoldzielenia z przyszlym plan.py 'decide') =====
-const DEC={ readyRed:35, readyYel:58, hrvRedFrac:0.82, hrvYelFrac:0.92, rhrRedDelta:7, rhrYelDelta:4, sleepRed:5.0, sleepYel:6.2 };
-function baseline(rows, field, n){
+// ===== Silnik Dnia: readiness 0–100 z wielu sygnalow Garmina =====
+// Progi wspoldzielone z przyszlym plan.py: zielony >=67, zolty >=45, ponizej czerwony.
+function clampv(x,a,b){ return Math.max(a,Math.min(b,x)); }
+// mapuje x z [x0,x1] na [y0,y1] z obcieciem do zakresu wyjsciowego
+function lerp(x,x0,x1,y0,y1){ if(x1===x0) return y0; return clampv(y0+(y1-y0)*(x-x0)/(x1-x0), Math.min(y0,y1), Math.max(y0,y1)); }
+function lastRow(rows){ return rows[rows.length-1]||{}; }
+// srednia z ostatnich n dni Z WYLACZENIEM dzisiaj (baza odniesienia)
+function baseField(rows, field, n){
   const a=rows.slice(0,-1).map(r=>r[field]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
   return a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
 }
-function decide(base, rows){
-  const r=rows[rows.length-1]||{};
-  const hrvBase=baseline(rows,"hrv",7), rhrBase=baseline(rows,"rhr",7);
+// Kazdy sygnal -> pod-wynik 0..100 + waga. Wynik dnia to srednia wazona.
+function readiness(rows){
+  const r=lastRow(rows);
+  const F=[];
+  const hrvBase=baseField(rows,"hrv",14), rhrBase=baseField(rows,"rhr",14);
+  if(r.gotowosc!=null) F.push({key:"gotowosc",label:"Gotowość",score:clampv(r.gotowosc,0,100),note:Math.round(r.gotowosc),weight:3});
+  if(r.hrv!=null&&hrvBase) F.push({key:"hrv",label:"HRV",score:lerp(r.hrv/hrvBase,0.80,1.10,25,92),note:Math.round(r.hrv)+" ms",weight:2});
+  else if(r.hrv!=null) F.push({key:"hrv",label:"HRV",score:60,note:Math.round(r.hrv)+" ms",weight:1});
+  if(r.rhr!=null&&rhrBase) F.push({key:"rhr",label:"Tętno sp.",score:lerp(r.rhr-rhrBase,8,-2,30,90),note:Math.round(r.rhr)+" bpm",weight:1.5});
+  if(r.sen!=null) F.push({key:"sen",label:"Sen",score:lerp(r.sen,4.5,7.8,25,92),note:r.sen+" h",weight:1.5});
+  if(r.bb_max!=null) F.push({key:"bodybattery",label:"Body Battery",score:clampv(r.bb_max,0,100),note:Math.round(r.bb_max),weight:1});
+  if(r.stres!=null) F.push({key:"stres",label:"Stres",score:clampv(100-r.stres,0,100),note:Math.round(r.stres),weight:1});
+  if(r.recovery_h!=null) F.push({key:"recovery",label:"Do regen.",score:lerp(r.recovery_h,0,36,92,30),note:Math.round(r.recovery_h)+" h",weight:1});
+  if(!F.length) return {score:null,zone:"none",factors:[],hasData:false};
+  const wsum=F.reduce((s,f)=>s+f.weight,0);
+  let score=F.reduce((s,f)=>s+f.score*f.weight,0)/wsum;
   const st=(r.status||"").toUpperCase();
-  let level=0; const why=[];
-  const bump=(lv,txt)=>{ level=Math.max(level,lv); if(txt)why.push([lv,txt]); };
-  if(r.gotowosc!=null){ if(r.gotowosc<DEC.readyRed)bump(2,`gotowość ${Math.round(r.gotowosc)}`); else if(r.gotowosc<DEC.readyYel)bump(1,`gotowość ${Math.round(r.gotowosc)}`); }
-  if(st==="POOR"||st==="LOW")bump(2,`HRV ${st==="POOR"?"słabe":"niskie"}`); else if(st==="UNBALANCED")bump(1,"HRV niezrównoważone");
-  if(r.hrv!=null&&hrvBase){ if(r.hrv<DEC.hrvRedFrac*hrvBase)bump(2,`HRV ${Math.round(r.hrv)} ms (baza ${Math.round(hrvBase)})`); else if(r.hrv<DEC.hrvYelFrac*hrvBase)bump(1,`HRV ${Math.round(r.hrv)} ms (baza ${Math.round(hrvBase)})`); }
-  if(r.sen!=null){ if(r.sen<DEC.sleepRed)bump(2,`sen ${r.sen} h`); else if(r.sen<DEC.sleepYel)bump(1,`sen ${r.sen} h`); }
-  if(r.rhr!=null&&rhrBase){ if(r.rhr>rhrBase+DEC.rhrRedDelta)bump(2,`tętno sp. ${Math.round(r.rhr)} (baza ${Math.round(rhrBase)})`); else if(r.rhr>rhrBase+DEC.rhrYelDelta)bump(1,`tętno sp. ${Math.round(r.rhr)}`); }
-
-  const planName=base.name;
-  const haveAny = r.gotowosc!=null||r.hrv!=null||r.sen!=null;
-  if(!haveAny) return {dot:"⚪",tag:"Brak danych",session:base,swapped:false,planName,why:"brak danych regeneracji — plan bazowy"};
-
-  const REST={kind:"rest",name:"Regeneracja",icon:"🧘",detail:"spacer · mobilność · rozciąganie · oddech",exercises:null};
-  const Z2={kind:"cardio",name:"Zone 2 — spokojnie",icon:"🚴",detail:"30–35 min · tętno 125–140 · oddech nosem",exercises:null};
-  let session=base, dot, tag;
-  if(level>=2){ dot="🔴"; tag="Regeneracja"; if(base.kind!=="rest")session=REST; }
-  else if(level===1){ dot="🟡"; tag="Lekko";
-    if(base.kind==="strength")session=Z2;
-    else if(base.kind==="cardio")session={...base,detail:base.detail+" · dziś krócej"}; }
-  else { dot="🟢"; tag="Gotowy"; if(base.kind==="strength")session={...base,detail:(base.detail?base.detail+" · ":"")+"możesz docisnąć"}; }
-
-  const swapped = session.name!==base.name;
-  let why_txt;
-  if(level===0){
-    const good=[]; if(r.gotowosc!=null)good.push(`gotowość ${Math.round(r.gotowosc)}`); if(r.hrv!=null)good.push(`HRV ${Math.round(r.hrv)} ms`); if(r.sen!=null)good.push(`sen ${r.sen} h`);
-    why_txt = good.slice(0,3).join(", ")+" → plan bez zmian";
-  } else {
-    const top = why.filter(w=>w[0]===level).slice(0,2).map(w=>w[1]);
-    const tail = level>=2 ? "dziś regeneracja, nie siła" : (swapped?"ścinamy do Zone 2":"trzymaj lekko");
-    why_txt = top.join(", ")+" → "+tail;
-  }
-  return {dot,tag,session,swapped,planName,why:why_txt};
+  if(st==="POOR") score-=8; else if(st==="LOW"||st==="UNBALANCED") score-=4;
+  score=Math.round(clampv(score,0,100));
+  const zone = score>=67?"green" : score>=45?"yellow" : "red";
+  return {score,zone,factors:F,status:st,hasData:true};
 }
 
-// Ostatni zapisany ciezar dla cwiczenia (log.ex[id] = {kg, d}).
-function lastWeight(exId){ const h=log.ex&&log.ex[exId]; return (h&&h.kg!=null)?h:null; }
+// Decyzja dnia: laczy readiness + plan + histori w JEDEN focus.
+function dailyFocus(ph, wk, dow, rows){
+  const base=buildSession(ph, wk, dow);
+  const rd=readiness(rows);
+  const REST={kind:"rest",name:"Regeneracja aktywna",icon:"🧘",detail:"spacer · mobilność · rozciąganie · oddech",exercises:null};
+  const Z2={kind:"cardio",name:"Zone 2 — spokojnie",icon:"🚴",detail:"30–35 min · tętno 125–140 · oddech nosem",exercises:null};
+  let session=base;
+  if(rd.hasData){
+    if(rd.zone==="red"){ if(base.kind!=="rest") session=REST; }
+    else if(rd.zone==="yellow"){
+      if(base.kind==="strength") session=Z2;
+      else if(base.kind==="cardio") session={...base,detail:(base.detail?base.detail+" · ":"")+"dziś krócej"};
+    }
+  }
+  const swapped = session.name!==base.name;
+  let title, intensityL, intensityT;
+  if(session.kind==="rest"){ title="Regeneracja"; intensityL="Bardzo lekko"; intensityT="spacer, mobilność, oddech nosem — zero obciążenia"; }
+  else if(session.kind==="strength"){
+    if(rd.zone==="green"){ title="Siła — dociśnij"; intensityL="RPE 8"; intensityT="zostaw ~2 powt. w zapasie, ostatnia seria mocna"; }
+    else { title="Siła — technika"; intensityL="RPE 7"; intensityT="pełen zakres ruchu, spokojne tempo"; }
+  } else {
+    const zoneTxt=(ph&&ph.cardio&&ph.cardio.zone)||"tętno 125–140 · oddech nosem";
+    title = swapped ? "Tlen zamiast siły" : (rd.zone==="yellow" ? "Zone 2 — krócej" : "Zone 2 — równo");
+    intensityL="Zone 2"; intensityT=zoneTxt;
+  }
+  let why;
+  if(!rd.hasData){ why="Brak danych regeneracji — trzymamy plan bazowy. Odśwież dane z Garmina."; }
+  else {
+    const sorted=[...rd.factors].sort((a,b)=>a.score-b.score);
+    if(rd.zone==="green"){
+      const top=sorted.slice(-2).reverse().map(f=>f.label.toLowerCase()+" "+f.note);
+      why="Masz zapas — "+top.join(", ")+". Dziś możesz zainwestować.";
+    } else {
+      const low=sorted.slice(0,2).map(f=>f.label.toLowerCase()+" "+f.note);
+      const tail=rd.zone==="red"?"dziś regeneracja, nie obciążaj":"zejdź z intensywności";
+      why=low.join(", ")+" → "+tail+".";
+    }
+  }
+  return {ready:rd, session, base, swapped, planName:base.name, title, why, intensityL, intensityT};
+}
+
+// Pierscien readiness (SVG).
+function ring(score, zone){
+  const col={green:"#10b981",yellow:"#fbbf24",red:"#ef4444"}[zone]||"#6a6a6a";
+  const rr=34, c=2*Math.PI*rr, off=c*(1-(score||0)/100);
+  return `<svg viewBox="0 0 80 80" style="width:82px;height:82px">
+    <circle cx="40" cy="40" r="${rr}" fill="none" stroke="#232323" stroke-width="7"/>
+    <circle cx="40" cy="40" r="${rr}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 40 40)"/>
+    <text x="40" y="41" text-anchor="middle" dominant-baseline="central" fill="${col}"
+      font-size="24" font-weight="700" font-family="ui-monospace,monospace">${score!=null?score:"–"}</text>
+  </svg>`;
+}
+function zoneClass(z){ return {green:"z-green",yellow:"z-yellow",red:"z-red"}[z]||"z-none"; }
+function zoneLabel(z){ return {green:"Gotowy",yellow:"Lekko",red:"Regeneracja"}[z]||"Brak danych"; }
+function factColor(s){ return s>=67?"#10b981":s>=45?"#fbbf24":"#ef4444"; }
+
+// ===== Progresja siły: historia per cwiczenie + inteligentna sugestia obciazenia =====
+function fmt(x){ return (Math.round(x*10)/10).toString().replace(".",","); }
+function exHist(id){ return (log.exHist&&log.exHist[id])||[]; }
+// jednorazowa migracja starego log.ex {kg,d} -> log.exHist [{kg,d}]
+function migrateStrength(){
+  if(log.exHist) return;
+  log.exHist={};
+  if(log.ex) for(const id in log.ex){ const e=log.ex[id]; if(e&&e.kg!=null) log.exHist[id]=[{kg:e.kg,d:e.d||""}]; }
+  save("fit-log-v1",log);
+}
+function pushWeight(id,kg,tk){
+  if(!log.exHist) log.exHist={};
+  const h=log.exHist[id]||(log.exHist[id]=[]);
+  const last=h[h.length-1];
+  if(last&&last.d===tk) last.kg=kg;          // ten sam dzien -> nadpisz
+  else h.push({kg,d:tk});
+  if(h.length>12) h.splice(0,h.length-12);    // trzymamy ostatnie 12 wpisow
+  save("fit-log-v1",log);
+}
+// zawias biodrowy / duze partie -> wieksze skoki, gora ciala -> mniejsze
+function isLower(id){ return /squat|rdl|deadlift|lunge|hip|leg|farmer|przysiad|martwy|wykrok/i.test(id); }
+function nextTarget(id){
+  const h=exHist(id); if(!h.length) return null;
+  const last=h[h.length-1].kg, prev=h.length>=2?h[h.length-2].kg:null;
+  const inc=isLower(id)?5:2.5;
+  if(prev!=null && Math.abs(last-prev)<0.01) return {txt:"➜ spróbuj "+fmt(last+inc)+" kg"};   // 2 sesje ten sam ciezar -> dolóż
+  if(prev!=null && last>prev) return {txt:"utrzymaj "+fmt(last)+" kg"};                          // swiezy wzrost -> ugruntuj
+  return null;
+}
 function exRow(ex, tk){
-  const lw=lastWeight(ex.id);
-  const phv=lw?String(lw.kg):"";
-  const lastTxt=lw?`ost. ${lw.kg} kg${lw.d&&lw.d!==tk?" · "+lw.d.slice(5):""}`:(ex.note||"");
-  return `<div class="ex"><div><div class="exn">${ex.name}</div>
-      <div class="exs">${ex.scheme}${(ex.note&&lw)?" · "+ex.note:""}</div></div>
-    <div class="exw"><input type="text" inputmode="decimal" data-ex="${ex.id}" placeholder="${phv||"kg"}" />
-      <div class="last">${lastTxt}</div></div></div>`;
+  const h=exHist(ex.id), last=h.length?h[h.length-1]:null;
+  const phv=last?fmt(last.kg):"";
+  const nt=nextTarget(ex.id);
+  const histTxt = h.length
+    ? h.slice(-3).map(e=>fmt(e.kg)).join(" → ")+" kg"+(nt?` · <span class="chip">${nt.txt}</span>`:"")
+    : "";
+  return `<div class="ex">
+    <div style="flex:1;min-width:0">
+      <div class="exn">${ex.name}</div>
+      <div class="exs">${ex.scheme}${ex.note?" · "+ex.note:""}</div>
+      ${histTxt?`<div class="exhist">${histTxt}</div>`:""}
+    </div>
+    <div class="exw">
+      <input type="text" inputmode="decimal" data-ex="${ex.id}" placeholder="${phv||"kg"}" />
+      <div class="last">${last?"ost. "+fmt(last.kg)+" kg":"zapisz ciężar"}</div>
+    </div></div>`;
 }
 
 let log = load('fit-log-v1', {days:{},weights:{},ex:{}});
 if(!log.ex) log.ex={};
+migrateStrength();
 let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
 try{ localStorage.removeItem('garmin-v1'); localStorage.removeItem('data-pass'); }catch(e){}  // wyczysc stare cache danych i haslo ze starej wersji
 
@@ -258,22 +438,248 @@ function garminCard(){
   const rhrTrend = (rhr7!=null&&rhrPrev!=null)? rhr7-rhrPrev : null;
   const lastOf=(k)=>{for(let i=rows.length-1;i>=0;i--){const v=rows[i][k]; if(v!=null&&v!==""&&!isNaN(v))return +v;}return null;};
   const spo2=lastOf("spo2"), spo2min=lastOf("spo2_min"), tnoc=lastOf("temp_noc");
+  const bb=lastOf("bb_max"), stres=lastOf("stres");
   const arr=(v,goodUp)=> v==null?"":(Math.abs(v)<0.3?"":`<span class="arrow ${ (v>0)===goodUp ?"up":"down"}">${v>0?"▲":"▼"}${Math.abs(v).toFixed(1)}</span>`);
   const statusPL={BALANCED:"zrównoważone",UNBALANCED:"niezrównoważone",LOW:"niskie",POOR:"słabe"}[status]||status||"—";
   return `<div class="card">
     <p class="label">Regeneracja (z Garmina)</p>
     <div class="metrics">
-      <div class="m"><div class="mv mono">${r1(hrv7)}<span style="font-size:13px;color:var(--mut)"> ms</span>${arr(hrvTrend,true)}</div><div class="ml">HRV nocne (śr. 7 dni)</div></div>
-      <div class="m"><div class="mv mono">${r1(rhr7)}<span style="font-size:13px;color:var(--mut)"> bpm</span>${arr(rhrTrend,false)}</div><div class="ml">Tętno spoczynkowe</div></div>
-      <div class="m"><div class="mv mono">${r1(sen7)}<span style="font-size:13px;color:var(--mut)"> h</span></div><div class="ml">Sen (śr. 7 dni)${senStd!=null?` · ±${r1(senStd)}h`:""}</div></div>
-      <div class="m"><div class="mv mono">${steps7!=null?Math.round(steps7).toLocaleString("pl-PL"):"—"}</div><div class="ml">Kroki (śr. 7 dni)</div></div>
-      ${spo2!=null?`<div class="m"><div class="mv mono">${r1(spo2)}<span style="font-size:13px;color:var(--mut)">%</span></div><div class="ml">SpO₂ we śnie${spo2min!=null?` · min ${r1(spo2min)}`:""}</div></div>`:""}
-      ${tnoc!=null?`<div class="m"><div class="mv mono">${r1(tnoc)}<span style="font-size:13px;color:var(--mut)">°C</span></div><div class="ml">Temp. w nocy</div></div>`:""}
+      <div class="m" data-info="hrv"><div class="mv mono">${r1(hrv7)}<span style="font-size:13px;color:var(--mut)"> ms</span>${arr(hrvTrend,true)}</div><div class="ml">HRV nocne (śr. 7 dni)${ic()}</div></div>
+      <div class="m" data-info="rhr"><div class="mv mono">${r1(rhr7)}<span style="font-size:13px;color:var(--mut)"> bpm</span>${arr(rhrTrend,false)}</div><div class="ml">Tętno spoczynkowe${ic()}</div></div>
+      <div class="m" data-info="sen"><div class="mv mono">${r1(sen7)}<span style="font-size:13px;color:var(--mut)"> h</span></div><div class="ml">Sen (śr. 7 dni)${senStd!=null?` · ±${r1(senStd)}h`:""}${ic()}</div></div>
+      <div class="m" data-info="steps"><div class="mv mono">${steps7!=null?Math.round(steps7).toLocaleString("pl-PL"):"—"}</div><div class="ml">Kroki (śr. 7 dni)${ic()}</div></div>
+      ${bb!=null?`<div class="m" data-info="bodybattery"><div class="mv mono">${Math.round(bb)}</div><div class="ml">Body Battery (szczyt)${ic()}</div></div>`:""}
+      ${stres!=null?`<div class="m" data-info="stres"><div class="mv mono">${Math.round(stres)}</div><div class="ml">Stres (śr. dzień)${ic()}</div></div>`:""}
+      ${spo2!=null?`<div class="m" data-info="spo2"><div class="mv mono">${r1(spo2)}<span style="font-size:13px;color:var(--mut)">%</span></div><div class="ml">SpO₂ we śnie${spo2min!=null?` · min ${r1(spo2min)}`:""}${ic()}</div></div>`:""}
+      ${tnoc!=null?`<div class="m" data-info="tempnoc"><div class="mv mono">${r1(tnoc)}<span style="font-size:13px;color:var(--mut)">°C</span></div><div class="ml">Temp. w nocy${ic()}</div></div>`:""}
     </div>
     <div style="margin-top:14px"><p class="label" style="margin-bottom:6px">HRV — 30 dni</p>${spark(nz(hrv).slice(-30),"#10b981")}</div>
     <div class="sub">Status HRV: <b style="color:var(--tx)">${statusPL}</b></div>
     <div class="stamp">${gar.source==="auto"?"Auto-aktualizacja":"Import"}: ${gar.importedAt? new Date(gar.importedAt).toLocaleString("pl-PL"):"—"} · ${rows.length} dni</div>
   </div>`;
+}
+
+function kondycjaCard(){
+  if(!gar||!gar.rows||!gar.rows.length) return "";
+  const rows=gar.rows;
+  const lastOf=(k)=>{for(let i=rows.length-1;i>=0;i--){const v=rows[i][k]; if(v!=null&&v!==""&&!isNaN(v))return +v;}return null;};
+  const vo2vals=rows.map(r=>r.vo2max).filter(x=>x!=null&&!isNaN(x));
+  const vo2=vo2vals.length?vo2vals[vo2vals.length-1]:null;
+  const vo2prev=vo2vals.length>8?vo2vals[Math.max(0,vo2vals.length-31)]:null;
+  const vo2tr=(vo2!=null&&vo2prev!=null)?vo2-vo2prev:null;
+  const load=lastOf("training_load"), endur=lastOf("endurance");
+  let minInt=null, any=false; rows.slice(-7).forEach(r=>{ if(r.min_intensywne!=null&&!isNaN(r.min_intensywne)){ minInt=(minInt||0)+r.min_intensywne; any=true; } });
+  if(!any) minInt=null;
+  let tstatus=""; for(let i=rows.length-1;i>=0;i--){ if(rows[i].training_status){ tstatus=rows[i].training_status; break; } }
+  if(vo2==null&&load==null&&endur==null&&minInt==null) return "";
+  const arr=(v,up)=> (v==null||Math.abs(v)<0.3)?"":`<span class="arrow ${(v>0)===up?"up":"down"}">${v>0?"▲":"▼"}${Math.abs(v).toFixed(1)}</span>`;
+  return `<div class="card">
+    <p class="label">Kondycja (silnik tlenowy)</p>
+    <div class="metrics">
+      ${vo2!=null?`<div class="m" data-info="vo2max"><div class="mv mono">${r1(vo2)}${arr(vo2tr,true)}</div><div class="ml">VO₂max${ic()}</div></div>`:""}
+      ${minInt!=null?`<div class="m" data-info="minint"><div class="mv mono">${Math.round(minInt)}<span style="font-size:13px;color:var(--mut)"> min</span></div><div class="ml">Minuty intensywne (7 dni)${ic()}</div></div>`:""}
+      ${load!=null?`<div class="m" data-info="trainingload"><div class="mv mono">${Math.round(load)}</div><div class="ml">Obciążenie treningowe${ic()}</div></div>`:""}
+      ${endur!=null?`<div class="m" data-info="endurance"><div class="mv mono">${Math.round(endur)}</div><div class="ml">Endurance score${ic()}</div></div>`:""}
+    </div>
+    ${vo2vals.length>2?`<div style="margin-top:14px"><p class="label" style="margin-bottom:6px">VO₂max — trend</p>${spark(vo2vals.slice(-30),"#6366f1")}</div>`:""}
+    ${tstatus?`<div class="sub">Status treningu: <b style="color:var(--tx)">${tstatus}</b></div>`:""}
+  </div>`;
+}
+
+// ===== Treści objaśnień (dotknij metryki) =====
+const INFO = {
+ readiness:{t:"Gotowość dnia (0–100)",h:`<p>Jeden wskaźnik łączący Twoje nocne sygnały z Garmina: gotowość treningową, HRV względem Twojej bazy, tętno spoczynkowe, sen, Body Battery, stres i czas do regeneracji. Każdy sygnał ma swoją wagę.</p><p><span class="t">67–100</span> zielony — możesz inwestować (siła, akcenty). <span class="t">45–66</span> żółty — trzymaj lekko. <span class="t">0–44</span> czerwony — dziś regeneracja.</p><p>To nie ocena Ciebie — to informacja, ile organizm dziś udźwignie bez cofania progresu.</p>`},
+ hrv:{t:"HRV — zmienność rytmu serca",h:`<p>Odstęp między uderzeniami serca w nocy. Wyższy = układ nerwowy wypoczęty i zbalansowany; niższy = zmęczenie, stres, infekcja lub za mało snu.</p><p>Liczy się <b>trend względem Twojej własnej bazy</b>, nie porównania z innymi. Spadek o ponad 15% pod bazę to sygnał, żeby odpuścić.</p><p class="t">Cel fazy 1: odwrócić trend w górę, 55+ ms.</p>`},
+ rhr:{t:"Tętno spoczynkowe",h:`<p>Ile uderzeń na minutę robi serce w pełnym spoczynku. Niższe zwykle znaczy lepszą kondycję i lepsze wypoczęcie.</p><p>Nagły wzrost o 5–7 uderzeń ponad bazę = niedospanie, stres lub nadchodząca choroba — dobry powód na lżejszy dzień.</p><p class="t">Kierunek: w dół wraz z poprawą kondycji.</p>`},
+ sen:{t:"Sen",h:`<p>Fundament regeneracji, gospodarki hormonalnej i apetytu. Za mało snu = większy głód, gorsze decyzje żywieniowe i słabszy trening.</p><p>Ważna jest nie tylko długość, ale <b>stałość pór</b>. Kładzenie się o podobnej godzinie stabilizuje HRV i Body Battery.</p><p class="t">Cel: 7–8 h, w łóżku przed 22:00.</p>`},
+ bodybattery:{t:"Body Battery",h:`<p>Szacunek Garmina Twojej „baterii" energii (0–100) na bazie HRV, stresu, snu i aktywności. Rośnie w odpoczynku, spada przy wysiłku i stresie.</p><p>Wysoki poranny poziom = dobry moment na mocniejszy trening. Niski = priorytet regeneracja.</p>`},
+ stres:{t:"Stres (Garmin)",h:`<p>Wskaźnik 0–100 z analizy HRV w ciągu dnia. Wyższy = dłuższa aktywacja „walcz lub uciekaj" (praca, kawa, niedospanie).</p><p>Przewlekle wysoki stres blokuje regenerację i spalanie tłuszczu. Oddech nosem, spacery i sen go obniżają.</p>`},
+ recovery:{t:"Czas do regeneracji",h:`<p>Ile godzin Garmin sugeruje do pełnego wypoczęcia po ostatnim wysiłku. Wysoka wartość rano = ciało jeszcze pracuje nad naprawą.</p><p>Trening na dużym „długu" regeneracyjnym daje słabszy efekt i większe ryzyko kontuzji.</p>`},
+ gotowosc:{t:"Gotowość treningowa (Garmin)",h:`<p>Ocena Garmina 0–100, jak bardzo jesteś gotów na wysiłek — łączy sen, HRV, obciążenie i czas regeneracji. To najsilniejszy pojedynczy sygnał w naszym liczniku dnia.</p>`},
+ vo2max:{t:"VO₂max",h:`<p>Maksymalny pobór tlenu — miara mocy silnika tlenowego i jeden z najlepszych pojedynczych predyktorów zdrowia i długowieczności.</p><p>Rośnie od regularnej Zone 2 i okazjonalnych akcentów tempowych. Zmiany są powolne — patrz na trend miesięczny.</p><p class="t">Cel: 40.</p>`},
+ trainingload:{t:"Obciążenie treningowe",h:`<p>Suma wysiłku z ostatnich dni (Garmin, ~7-dniowe). Pokazuje, ile pracy włożyłeś — samo w sobie nie mówi, czy to za dużo. Od tego jest wskaźnik ryzyka poniżej.</p>`},
+ acwr:{t:"Ryzyko przetrenowania (ostre : przewlekłe)",h:`<p>Stosunek objętości z <b>ostatnich 7 dni</b> do Twojej średniej tygodniowej z <b>28 dni</b>. Mówi, czy nie rozpędzasz się za szybko.</p><p><span class="t">0,8–1,3</span> słodki punkt — bezpieczny wzrost formy. <span class="t">powyżej 1,5</span> skok objętości = ryzyko kontuzji i przetrenowania. <span class="t">poniżej 0,8</span> tracisz formę, można dołożyć.</p><p>Zasada: zwiększaj objętość o maks. ~10% tygodniowo.</p>`},
+ endurance:{t:"Endurance score",h:`<p>Ocena Garmina Twojej wytrzymałości długodystansowej — im więcej regularnej pracy tlenowej, tym wyżej. Uzupełnia VO₂max o wymiar „ile wytrzymasz", nie tylko „jak mocno".</p>`},
+ minint:{t:"Minuty intensywne",h:`<p>Minuty w umiarkowanej i wysokiej intensywności (Garmin). WHO zaleca 150+ tygodniowo dla zdrowia. U nas to też miara objętości do liczenia ryzyka przetrenowania.</p><p class="t">Cel: 150+ / tydzień.</p>`},
+ steps:{t:"Kroki / NEAT",h:`<p>Codzienna aktywność poza treningiem (NEAT) to często największy, niedoceniany wydatek kalorii w redukcji — i łatwiejszy do utrzymania niż dokładanie ciężkich treningów.</p><p class="t">Cel: 7–8 tys. dziennie.</p>`},
+ focus:{t:"Focus dnia i RPE",h:`<p>Aplikacja bierze Twój plan na dziś i dostraja go do gotowości: przy słabym dniu siłownia zamienia się w spokojny tlen lub regenerację, przy dobrym — dostajesz zielone światło, by docisnąć.</p><p><b>RPE</b> to skala odczuwanego wysiłku 1–10. <span class="t">RPE 7</span> = zostają ~3 powtórzenia w zapasie (technika). <span class="t">RPE 8</span> = zostają ~2 (docisk).</p>`},
+ strength:{t:"Siła i progresja",h:`<p>Progres to <b>stopniowe przeciążanie</b>: gdy ciężar staje się łatwy (dwie sesje z zapasem), dokładasz trochę. Aplikacja podpowiada +2,5 kg (góra ciała) lub +5 kg (dół).</p><p>Siła w redukcji chroni mięśnie — schodzisz z wagi, ale zostajesz silny i utrzymujesz metabolizm.</p>`},
+ zone2:{t:"Zone 2 — baza tlenowa",h:`<p>Spokojny wysiłek, przy którym dasz radę mówić pełnymi zdaniami (tętno ~125–140, oddech nosem). Buduje mitochondria i zdolność spalania tłuszczu.</p><p>Nuda jest celem — to ma być łatwe. Objętość rośnie stopniowo z tygodniami.</p>`},
+ rest:{t:"Regeneracja aktywna",h:`<p>Dzień na odbudowę: spacer, mobilność, rozciąganie, oddech. Postęp dzieje się <b>między</b> treningami — bez regeneracji nie ma adaptacji.</p>`},
+ phase:{t:"Fazy planu",h:`<p>Plan idzie etapami: najpierw baza tlenowa i wzorce ruchu, potem rozbudowa (akcenty tempowe, cięższa siła). Gdy faza dobiega końca, aplikacja proponuje przejście dalej — jednym dotknięciem.</p>`},
+ priorities:{t:"Priorytety tygodnia",h:`<p>Na podstawie Twoich trendów aplikacja wybiera 1–3 rzeczy, które w tym tygodniu dadzą najwięcej — czy to sen, kroki, objętość, czy odpuszczenie. Skup się na nich, resztę po prostu trzymaj.</p>`},
+ tghdl:{t:"TG / HDL",h:`<p>Trójglicerydy podzielone przez „dobry" cholesterol HDL — prosty, mocny wskaźnik zdrowia metabolicznego i insulinowrażliwości.</p><p>Spada od redukcji tłuszczu, ruchu i ograniczenia cukrów prostych. Wpisz wyniki z badań krwi, by śledzić.</p><p class="t">Cel: poniżej 3 (idealnie poniżej 2).</p>`},
+ weight:{t:"Waga i tempo",h:`<p>Patrz na <b>trend</b>, nie na pojedynczy dzień — waga skacze od wody, soli i jedzenia. Zdrowe tempo w redukcji to ok. 0,5–1% masy ciała na tydzień.</p><p>Zbyt szybko = tracisz mięśnie i HRV. Wolno i stabilnie wygrywa.</p>`},
+ spo2:{t:"SpO₂ we śnie",h:`<p>Wysycenie krwi tlenem w nocy. Zdrowe wartości to zwykle 94–99%. Regularnie niskie minima mogą sugerować gorszą jakość oddechu we śnie — warto obserwować.</p>`},
+ tempnoc:{t:"Temperatura w nocy",h:`<p>Nocne minimum w Twojej okolicy (z danych pogodowych). Ciepłe noce potrafią pogarszać sen i podnosić tętno spoczynkowe — to kontekst do interpretacji regeneracji.</p>`}
+};
+
+let _sheetOpen=false;
+function showSheet(key){
+  const info=INFO[key]; if(!info||_sheetOpen) return;
+  _sheetOpen=true;
+  const el=document.createElement("div"); el.className="sheet";
+  el.innerHTML=`<div class="sheet-card"><div class="grip"></div><h3>${info.t}</h3>
+    <div class="sbody">${info.h}</div><button class="close">Rozumiem</button></div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add("on"));
+  const close=()=>{ el.classList.remove("on"); _sheetOpen=false; setTimeout(()=>el.remove(),220); };
+  el.addEventListener("click",(e)=>{ if(e.target===el || e.target.classList.contains("close")) close(); });
+}
+
+// ===== Ryzyko przetrenowania: ostre (7 dni) : przewlekłe (śr. tyg. z 28 dni) =====
+function acwrData(rows){
+  const load=rows.map(r=> (r.min_intensywne!=null&&!isNaN(r.min_intensywne))? r.min_intensywne : 0);
+  const present=rows.slice(-28).filter(r=> r.min_intensywne!=null&&!isNaN(r.min_intensywne)).length;
+  if(rows.length<21 || present<10) return null;              // za mało danych na sensowny wskaźnik
+  const sum=(a)=>a.reduce((s,x)=>s+x,0);
+  const acute=sum(load.slice(-7));
+  const chronic=sum(load.slice(-28))/4;
+  if(chronic<=0) return acute>0 ? {ratio:null,acute,chronic:0,zone:"ramp",label:"Rozpęd"} : null;
+  const ratio=acute/chronic;
+  let zone,label;
+  if(ratio<0.8){ zone="low"; label="Niedociążenie"; }
+  else if(ratio<=1.3){ zone="opt"; label="Optymalnie"; }
+  else if(ratio<=1.5){ zone="watch"; label="Uwaga"; }
+  else { zone="high"; label="Wysokie ryzyko"; }
+  return {ratio,acute,chronic,zone,label};
+}
+function acwrCard(){
+  if(!gar||!gar.rows) return "";
+  const a=acwrData(gar.rows); if(!a) return "";
+  const col={low:"#8a8a8a",opt:"#10b981",watch:"#f59e0b",high:"#ef4444",ramp:"#6366f1"}[a.zone]||"#8a8a8a";
+  const ratioTxt=a.ratio!=null ? a.ratio.toFixed(2).replace(".",",") : "—";
+  const sweetL=0.8/2*100, sweetW=(1.3-0.8)/2*100;
+  const markPos=a.ratio!=null ? Math.min(100, a.ratio/2*100) : 0;
+  return `<div class="card" data-info="acwr">
+    <p class="label">Ryzyko przetrenowania${ic()}</p>
+    <div class="acwr-top">
+      <div class="acwr-v mono" style="color:${col}">${ratioTxt}</div>
+      <div class="acwr-lab" style="background:${col}22;color:${col}">${a.label}</div>
+    </div>
+    <div class="acwr-bar"><div class="acwr-sweet" style="left:${sweetL}%;width:${sweetW}%"></div>
+      ${a.ratio!=null?`<div class="acwr-mark" style="left:calc(${markPos}% - 1.5px)"></div>`:""}</div>
+    <div class="acwr-sc"><span>0,8</span><span>słodki punkt</span><span>1,5+</span></div>
+    <div class="sub" style="margin-top:11px">Ostatnie 7 dni: <b style="color:var(--tx)">${Math.round(a.acute)} min</b> · baza tygodniowa: ${Math.round(a.chronic)} min</div>
+  </div>`;
+}
+
+// ===== Priorytety tygodnia: 1–3 rzeczy o największym zwrocie, z Twoich trendów =====
+function priorities(rows){
+  const nzslice=(k,n)=>rows.map(r=>r[k]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
+  const avg=(a)=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+  const hrvArr=nzslice("hrv",14), hrv7=avg(hrvArr.slice(-7)), hrvPrev=hrvArr.length>7?avg(hrvArr.slice(0,hrvArr.length-7)):null;
+  const hrvTrend=(hrv7!=null&&hrvPrev!=null)?hrv7-hrvPrev:null;
+  const steps7=avg(nzslice("kroki",7));
+  const senArr=nzslice("sen",14), sen7=avg(senArr.slice(-7));
+  const senStd=senArr.length>2?Math.sqrt(avg(senArr.map(x=>Math.pow(x-avg(senArr),2)))):null;
+  let status=""; for(let i=rows.length-1;i>=0;i--){ if(rows[i].status){ status=(rows[i].status||"").toUpperCase(); break; } }
+  const a=acwrData(rows);
+  const vo2=nzslice("vo2max",60), vo2Trend=vo2.length>10?vo2[vo2.length-1]-vo2[0]:null;
+  const C=[];
+  if(status==="POOR"||status==="LOW"||(hrvTrend!=null&&hrvTrend<-3))
+    C.push({key:"recovery",icon:"🛌",title:"Regeneracja na pierwszym miejscu",note:"HRV pod kreską — więcej snu, mniej intensywności.",weight:9});
+  if(a&&a.zone==="high")
+    C.push({key:"acwr",icon:"⚠️",title:"Zejdź z objętości",note:"Ostry skok obciążenia — ryzyko przetrenowania. Utrzymaj, nie dokładaj.",weight:8.5});
+  if((senStd!=null&&senStd>1.2)||(sen7!=null&&sen7<6.5))
+    C.push({key:"sen",icon:"😴",title:"Ustabilizuj sen",note:"Stałe pory snu podbiją HRV i regenerację szybciej niż cokolwiek innego.",weight:7.5});
+  if(steps7!=null&&steps7<7000)
+    C.push({key:"steps",icon:"🚶",title:"Dobij kroki (NEAT)",note:`Średnio ${Math.round(steps7/100)/10}k/dzień — celuj w 7–8k, to spory wydatek kalorii.`,weight:7});
+  if(a&&a.zone==="low")
+    C.push({key:"acwr",icon:"📈",title:"Można dołożyć objętości",note:"Masz zapas — bezpiecznie dorzuć jeden trening tlenowy w tym tygodniu.",weight:5.5});
+  if(vo2Trend!=null&&vo2Trend<=0)
+    C.push({key:"vo2max",icon:"🫁",title:"Rusz VO₂max",note:"Trend płaski — trzymaj Zone 2 i raz w tygodniu krótki akcent tempowy.",weight:5});
+  C.push({key:"strength",icon:"💪",title:"Nie odpuszczaj siły",note:"2 sesje w tygodniu chronią mięśnie w redukcji. Progresuj powoli.",weight:4});
+  C.push({key:"weight",icon:"⚖️",title:"Trzymaj stabilne tempo",note:"0,5–1% masy na tydzień. Patrz na trend, nie na pojedynczy dzień.",weight:3});
+  C.sort((x,y)=>y.weight-x.weight);
+  const seen=new Set(), out=[]; for(const c of C){ if(seen.has(c.key))continue; seen.add(c.key); out.push(c); if(out.length>=3)break; }
+  return out;
+}
+function prioritiesCard(){
+  if(!gar||!gar.rows||gar.rows.length<3) return "";
+  const ps=priorities(gar.rows); if(!ps.length) return "";
+  return `<div class="card">
+    <p class="label">W tym tygodniu — priorytety${ib('priorities')}</p>
+    ${ps.map((p,i)=>`<div class="prio" data-info="${p.key}"><div class="pic">${p.icon}</div>
+      <div style="flex:1;min-width:0"><div class="pt">${p.title}${ic()}</div><div class="pn">${p.note}</div></div>
+      <div class="rank">#${i+1}</div></div>`).join("")}
+  </div>`;
+}
+
+// ===== Auto-progresja faz: wykrycie końca + jedno kliknięcie do następnej =====
+function nextPhase(ph){ const p=(PLANDATA&&PLANDATA.phases)||[]; return ph?p.find(x=>x.id===ph.id+1)||null:null; }
+function phaseTransitionCard(ph, wk){
+  const np=nextPhase(ph); if(!np) return "";
+  if(wk < (ph.weeks||99)) return "";                          // faza jeszcze trwa
+  return `<div class="card phase-card">
+    <p class="label" style="color:var(--amber-l)">Koniec fazy${ib('phase')}</p>
+    <div class="focus-t" style="margin-top:6px">${ph.subtitle} zaliczona 🎉</div>
+    <div class="focus-w" style="margin-top:6px">Tydzień ${wk}/${ph.weeks}. Czas na <b style="color:var(--tx)">${np.subtitle}: ${np.name}</b>.</div>
+    <button class="act done" id="nextPhaseBtn">Rozpocznij ${np.subtitle}: ${np.name}</button>
+  </div>`;
+}
+
+// ===== Widok Postępy =====
+function exNameMap(){
+  const m={};
+  ((PLANDATA&&PLANDATA.phases)||[]).forEach(ph=>{
+    Object.values(ph.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id&&!m[e.id]) m[e.id]=e.name; }); });
+  });
+  return m;
+}
+function weeklyAgg(rows){
+  const byWeek={};
+  rows.forEach(r=>{ if(!r.data) return; const d=new Date(r.data+"T00:00:00"); if(isNaN(d)) return;
+    const k=key(monday(d)); (byWeek[k]=byWeek[k]||{minutes:0,trained:0}).minutes += (r.min_intensywne!=null&&!isNaN(r.min_intensywne))?r.min_intensywne:0; });
+  Object.keys(log.days||{}).forEach(dk=>{ if((log.days[dk]||{}).trained){ const d=new Date(dk+"T00:00:00"); if(isNaN(d)) return;
+    const k=key(monday(d)); (byWeek[k]=byWeek[k]||{minutes:0,trained:0}).trained += 1; } });
+  return Object.keys(byWeek).sort().slice(-8).map(k=>{ const dd=new Date(k+"T00:00:00");
+    return {short:(dd.getMonth()+1)+"/"+dd.getDate(), minutes:Math.round(byWeek[k].minutes||0), trained:byWeek[k].trained||0}; });
+}
+function bars(items, color){
+  if(!items.length) return '<div class="sub">Za mało danych.</div>';
+  const mx=Math.max(1,...items.map(i=>i.v));
+  return `<div class="bars">${items.map(i=>`<div class="bar" title="${i.v}">
+    <div class="bwrap"><div class="bfill" style="height:${Math.round(i.v/mx*100)}%;background:${color}"></div></div>
+    <div class="blab">${i.label}</div></div>`).join("")}</div>`;
+}
+function progressView(rows){
+  const nzslice=(k,n)=>rows.map(r=>r[k]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
+  const mw=mergedWeights().map(p=>p.v);
+  const trend=(label,vals,unit,goodUp,info,color)=>{
+    vals=nz(vals); if(vals.length<2) return "";
+    const cur=vals[vals.length-1], delta=cur-vals[0];
+    const cls=(delta>0)===goodUp?"up":"down", sign=delta>0?"+":"";
+    return `<div class="trend" data-info="${info}">
+      <div class="between"><div class="n">${label}${ic()}</div>
+        <div class="mono"><b>${r1(cur)}</b> ${unit} ${Math.abs(delta)<0.05?"":`<span class="arrow ${cls}">${sign}${r1(delta)}</span>`}</div></div>
+      ${spark(vals,color)}</div>`;
+  };
+  const wk=weeklyAgg(rows), nm=exNameMap();
+  const exIds=Object.keys(log.exHist||{}).filter(id=>(log.exHist[id]||[]).length>=1);
+  const totalTrained=wk.reduce((s,w)=>s+w.trained,0);
+  return `
+    <div class="card">
+      <p class="label">Kluczowe trendy</p>
+      ${trend("Waga",mw.slice(-60),"kg",false,"weight","#fbbf24")||`<div class="sub">Waga: za mało danych.</div>`}
+      ${trend("HRV nocne",nzslice("hrv",60),"ms",true,"hrv","#10b981")}
+      ${trend("VO₂max",nzslice("vo2max",90),"",true,"vo2max","#6366f1")}
+      ${trend("Kroki (dz.)",nzslice("kroki",30),"",true,"steps","#f59e0b")}
+    </div>
+    <div class="card">
+      <p class="label">Objętość tygodniowa${ib('minint')}</p>
+      <div class="sub" style="margin-bottom:2px">Minuty intensywne / tydzień (ostatnie ${wk.length})</div>
+      ${bars(wk.map(w=>({label:w.short,v:w.minutes})),"#6366f1")}
+      <div class="sub" style="margin-top:12px">Treningi odhaczone: <b style="color:var(--tx)">${totalTrained}</b> w ${wk.length} tyg.</div>
+    </div>
+    ${exIds.length?`<div class="card">
+      <p class="label">Siła — progresja${ib('strength')}</p>
+      ${exIds.map(id=>{ const vals=(log.exHist[id]||[]).map(e=>e.kg); const cur=vals[vals.length-1], d=cur-vals[0];
+        return `<div class="exprog"><div class="between"><div class="n">${nm[id]||id}</div>
+          <div class="mono"><b>${fmt(cur)}</b> kg ${vals.length>1&&d!==0?`<span class="arrow ${d>0?"up":"down"}">${d>0?"+":""}${fmt(d)}</span>`:""}</div></div>
+          ${vals.length>1?spark(vals,"#f59e0b"):`<div class="sub">Zapisz kolejny ciężar, by zobaczyć trend.</div>`}</div>`;}).join("")}
+    </div>`:`<div class="card"><p class="label">Siła — progresja</p><div class="sub" style="margin-top:8px">Zapisuj ciężary przy ćwiczeniach w zakładce „Dziś", a tu pojawią się wykresy progresji.</div></div>`}
+  `;
 }
 
 function renderLocked(){
@@ -307,15 +713,25 @@ function render(){
   const toGoal=Math.round((cur-GOAL)*10)/10;
   const mon=monday(t), wd=[...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
   const trained=wd.slice(0,6).filter(d=>(log.days[key(d)]||{}).trained).length;
-  const dec = decide(baseSession, rows);
-  const isStrength = dec.session.kind==="strength" && dec.session.exercises && dec.session.exercises.length;
-  const doneTxt = dec.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
-                                            : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
+  const f = dailyFocus(ph, wk, t.getDay(), rows);
+  const isStrength = f.session.kind==="strength" && f.session.exercises && f.session.exercises.length;
+  const sessInfo = f.session.kind==="strength" ? "strength" : (f.session.kind==="rest" ? "rest" : "zone2");
+  const doneTxt = f.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
+                                          : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
+  const factsHtml = f.ready.hasData
+    ? `<div class="facts">${f.ready.factors.map(x=>`<span class="fact" data-info="${x.key||''}"><span class="fdot" style="background:${factColor(x.score)}"></span>${x.label} <b>${x.note}</b></span>`).join("")}</div>`
+    : "";
 
   document.getElementById("app").innerHTML = `
     <p class="eyebrow">Protokół metaboliczny</p>
     <h1>${ph.subtitle} · ${ph.name}</h1>
 
+    <div class="seg">
+      <button class="segb ${view==='today'?'on':''}" data-view="today">Dziś</button>
+      <button class="segb ${view==='progress'?'on':''}" data-view="progress">Postępy</button>
+    </div>
+
+    ${view==='progress' ? progressView(rows) : `
     <div class="card">
       <div class="big mono">${(Math.round(cur*10)/10).toFixed(1)}<span style="font-size:18px;color:var(--mut)"> kg</span></div>
       <div class="sub">${toGoal>0?toGoal.toFixed(1)+" kg do celu 90":"cel osiągnięty 🎉"} · start 116</div>
@@ -325,18 +741,30 @@ function render(){
 
     <div class="card">
       <div class="between"><p class="label">Dziś · ${WL[(t.getDay()+6)%7]}</p>
-        <span style="font-size:13px">${dec.dot} <b style="color:var(--tx)">${dec.tag}</b></span></div>
+        <span class="zonepill ${zoneClass(f.ready.zone)}">${zoneLabel(f.ready.zone)}</span></div>
       <div class="wk">${ph.subtitle} · Tydzień ${wk}${ph.weeks?" / "+ph.weeks:""}</div>
-      <div class="row"><div class="ic">${dec.session.icon}</div><div style="flex:1">
-        <div class="plan-name">${dec.session.name}</div>
-        <div class="plan-det">${dec.session.detail||""}</div>
-        ${dec.swapped?`<div class="plan-det" style="color:var(--mut2)">plan na dziś: ${dec.planName}</div>`:""}
+      <div class="hero">
+        <div class="ringwrap" data-info="readiness">${ring(f.ready.score, f.ready.zone)}</div>
+        <div class="htxt">
+          <div class="focus-t" data-info="${sessInfo}">${f.session.icon} ${f.title}${ic()}</div>
+          <div class="focus-w">${f.why}</div>
+        </div>
+      </div>
+      <div class="intens" data-info="focus"><span class="il">${f.intensityL}${ic()}</span><span>${f.intensityT}</span></div>
+      ${factsHtml}
+      <div class="row" style="margin-top:14px"><div style="flex:1">
+        <div class="plan-name">${f.session.name}</div>
+        <div class="plan-det">${f.session.detail||""}</div>
+        ${f.swapped?`<div class="plan-det" style="color:var(--mut2)">plan na dziś: ${f.planName}</div>`:""}
       </div></div>
-      ${isStrength?`<div style="margin-top:8px">${dec.session.exercises.map(ex=>exRow(ex,tk)).join("")}</div>`:""}
-      <div class="sub" style="margin-top:10px">${dec.why}</div>
+      ${isStrength?`<div style="margin-top:6px">${f.session.exercises.map(ex=>exRow(ex,tk)).join("")}</div>`:""}
       <button class="act ${te.trained?"done":""}" data-x="trained">${doneTxt}</button>
       <button class="act sleep ${te.sleptEarly?"on":""}" data-x="sleptEarly">${te.sleptEarly?"😴 W łóżku przed 22:00":"W łóżku przed 22:00?"}</button>
     </div>
+
+    ${phaseTransitionCard(ph, wk)}
+
+    ${prioritiesCard()}
 
     <div class="card">
       <div class="between"><p class="label">Ten tydzień</p><p class="mono" style="color:var(--amber);margin:0;font-size:14px">${trained}/6</p></div>
@@ -346,7 +774,7 @@ function render(){
     </div>
 
     <div class="card">
-      <div class="between"><p class="label">Waga</p>${mw.length?`<p class="sub" style="margin:0">ost. ${r1(mw[mw.length-1].v)} kg</p>`:""}</div>
+      <div class="between"><p class="label" data-info="weight">Waga${ic()}</p>${mw.length?`<p class="sub" style="margin:0">ost. ${r1(mw[mw.length-1].v)} kg</p>`:""}</div>
       <div style="margin-top:12px">${spark(mw.slice(-20).map(p=>p.v),"#fbbf24")}</div>
       <div class="flex">
         <input type="text" id="w" inputmode="decimal" placeholder="np. 114,5" />
@@ -356,38 +784,72 @@ function render(){
 
     ${garminCard()}
 
+    ${kondycjaCard()}
+
+    ${acwrCard()}
+
     ${gar?`<button class="refresh" id="refreshBtn">🔄 Odśwież dane z Garmina</button>`:""}
+
+    ${gar?`<button class="refresh" id="briefBtn">${briefingOn()?"🔔 Poranny briefing: włączony — dotknij, by wyłączyć":"🔔 Włącz poranny briefing (push)"}</button>`:""}
 
     <label class="imp" id="impbtn">📥 Import z pliku <b>(CSV)</b><br>
       <span style="font-size:12px">awaryjnie: garmin_export.csv z Colab</span></label>
 
     <div class="card">
       <p class="label">Cele fazy 1 (8–12 tyg.)</p>
-      <div class="tgt"><div><div class="n">TG / HDL</div><div class="note">główny licznik ryzyka</div></div><div class="mono" style="color:var(--mut)">${tghdl!=null?r1(tghdl):"—"} <span style="color:var(--amber)">→ &lt;3</span></div></div>
-      <div class="tgt"><div><div class="n">HRV nocne</div><div class="note">odwrócić trend w górę</div></div><div class="mono" style="color:var(--mut)">${hrvNow!=null?Math.round(hrvNow):"—"} <span style="color:var(--amber)">→ 55+</span></div></div>
-      <div class="tgt"><div><div class="n">Kroki / dzień</div><div class="note">średnia 7 dni</div></div><div class="mono" style="color:var(--mut)">${stepsNow!=null?(Math.round(stepsNow/100)/10)+"k":"—"} <span style="color:var(--amber)">→ 7–8k</span></div></div>
-      <div class="tgt"><div><div class="n">VO2max</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">${vo2Now!=null?Math.round(vo2Now):"—"} <span style="color:var(--amber)">→ 40</span></div></div>
+      <div class="tgt" data-info="tghdl"><div><div class="n">TG / HDL${ic()}</div><div class="note">główny licznik ryzyka</div></div><div class="mono" style="color:var(--mut)">${tghdl!=null?r1(tghdl):"—"} <span style="color:var(--amber)">→ &lt;3</span></div></div>
+      <div class="tgt" data-info="hrv"><div><div class="n">HRV nocne${ic()}</div><div class="note">odwrócić trend w górę</div></div><div class="mono" style="color:var(--mut)">${hrvNow!=null?Math.round(hrvNow):"—"} <span style="color:var(--amber)">→ 55+</span></div></div>
+      <div class="tgt" data-info="steps"><div><div class="n">Kroki / dzień${ic()}</div><div class="note">średnia 7 dni</div></div><div class="mono" style="color:var(--mut)">${stepsNow!=null?(Math.round(stepsNow/100)/10)+"k":"—"} <span style="color:var(--amber)">→ 7–8k</span></div></div>
+      <div class="tgt" data-info="vo2max"><div><div class="n">VO2max${ic()}</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">${vo2Now!=null?Math.round(vo2Now):"—"} <span style="color:var(--amber)">→ 40</span></div></div>
     </div>
+    `}
 
     <p class="foot">Dane zapisują się lokalnie na tym urządzeniu.</p>
+    <div style="text-align:center">
+      <span class="toggle" id="explainToggle">Objaśnienia (dotknij metryki): <b>${explainOn()?"włączone":"wyłączone"}</b> · zmień</span>
+      ${planOverride()?`<div><span class="toggle" id="phaseReset" style="margin-top:8px">↺ Cofnij ręczną zmianę fazy</span></div>`:""}
+      <div><span class="toggle" id="lockBtn" style="margin-top:8px">🔒 Zapomnij hasło na tym urządzeniu</span></div>
+    </div>
   `;
 
+  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{ view=b.getAttribute("data-view"); render(); });
   document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{
     const f=b.getAttribute("data-x"); const e={...(log.days[tk]||{})}; e[f]=!e[f]; log.days[tk]=e; save("fit-log-v1",log); render();
   });
   const ws=document.getElementById("wsave"), wi=document.getElementById("w");
-  ws.onclick=()=>{const v=parseFloat((wi.value||"").replace(",",".")); if(!v||v<40||v>250)return; log.weights[tk]=Math.round(v*10)/10; save("fit-log-v1",log); render();};
-  wi.onkeydown=(e)=>{if(e.key==="Enter")ws.onclick();};
+  if(ws&&wi){
+    ws.onclick=()=>{const v=parseFloat((wi.value||"").replace(",",".")); if(!v||v<40||v>250)return; log.weights[tk]=Math.round(v*10)/10; save("fit-log-v1",log); render();};
+    wi.onkeydown=(e)=>{if(e.key==="Enter")ws.onclick();};
+  }
   document.querySelectorAll("input[data-ex]").forEach(inp=>{
     inp.onkeydown=(e)=>{ if(e.key==="Enter") inp.blur(); };
     inp.onchange=()=>{ const id=inp.getAttribute("data-ex");
       const v=parseFloat((inp.value||"").replace(",",".")); if(!v||v<=0||v>500) return;
-      if(!log.ex)log.ex={}; log.ex[id]={kg:Math.round(v*10)/10,d:tk}; save("fit-log-v1",log); render(); };
+      pushWeight(id, Math.round(v*10)/10, tk); render(); };
   });
   const rb=document.getElementById("refreshBtn");
   if(rb){ rb.onclick=refreshFromGarmin; if(refreshing) setRefreshLabel("Aktualizuję… (do ~3 min)", true); }
-  document.getElementById("impbtn").onclick=()=>document.getElementById("csv").click();
+  const bfb=document.getElementById("briefBtn");
+  if(bfb) bfb.onclick=()=> briefingOn()?disableBriefing():enableBriefing();
+  const imp=document.getElementById("impbtn");
+  if(imp) imp.onclick=()=>document.getElementById("csv").click();
+  const npb=document.getElementById("nextPhaseBtn");
+  if(npb) npb.onclick=()=>{ const np=nextPhase(ph); if(!np) return;
+    const ov=load("plan-override-v1",{})||{}; ov.activePhase=np.id; ov.starts=ov.starts||{};
+    ov.starts[np.id]=key(monday(new Date())); save("plan-override-v1",ov); render(); };
+  const et=document.getElementById("explainToggle");
+  if(et) et.onclick=()=>{ setExplain(!explainOn()); render(); };
+  const pr=document.getElementById("phaseReset");
+  if(pr) pr.onclick=()=>{ try{ localStorage.removeItem("plan-override-v1"); }catch(e){} render(); };
+  const lb=document.getElementById("lockBtn");
+  if(lb) lb.onclick=()=>{ if(confirm("Zapomnieć hasło na tym urządzeniu? Trzeba je będzie podać ponownie.")) forgetPass(); };
 }
+
+// Interaktywne objaśnienia: jedno delegowane nasłuchiwanie, działa po każdym renderze.
+document.addEventListener("click",(e)=>{
+  const el=e.target.closest("[data-info]");
+  if(el && explainOn()) showSheet(el.getAttribute("data-info"));
+});
 
 document.getElementById("csv").onchange=(ev)=>{
   const f=ev.target.files[0]; if(!f)return;
@@ -446,6 +908,40 @@ const REFRESH_SALT="protokol-refresh-auth-v1", REFRESH_ITER=100000;   // MUSI zg
 let lastCt=null, refreshing=false;
 const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
 
+// ===== Poranny briefing (Web Push) =====
+// Publiczny klucz VAPID — bezpieczny w kodzie. Prywatny trzymaj jako sekret VAPID_PRIVATE_KEY w GitHub (patrz PUSH_SETUP.md).
+const VAPID_PUBLIC_KEY="BJfML0e8bUr6Kwsnx8U-iT4wippeaGHNUk4lykAlSFJqKil6J3enatoYwutZGdm4AUxKRTxtVm0fXwm6aYkVwDU";
+function briefingOn(){ return !!load('briefing-v1', false); }
+function urlB64ToUint8(s){ const pad="=".repeat((4-s.length%4)%4); const b=(s+pad).replace(/-/g,"+").replace(/_/g,"/");
+  const raw=atob(b), u=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++) u[i]=raw.charCodeAt(i); return u; }
+async function enableBriefing(){
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+    alert("To urządzenie/przeglądarka nie wspiera powiadomień push.\nNa iPhone: dodaj apkę do ekranu głównego i otwórz z ikony (iOS 16.4+)."); return; }
+  const pass=getPass();
+  if(!pass){ alert("Najpierw odblokuj dane hasłem, potem włącz briefing."); return; }
+  if(!REFRESH_URL || REFRESH_URL.indexOf("REPLACE-ME")>=0){
+    alert("Najpierw skonfiguruj Workera (REFRESH_URL) — instrukcja: REFRESH_SETUP.md / PUSH_SETUP.md."); return; }
+  let perm=Notification.permission;
+  if(perm!=="granted") perm=await Notification.requestPermission();
+  if(perm!=="granted"){ alert("Powiadomienia są zablokowane. Włącz je w ustawieniach systemu, aby dostawać briefing."); return; }
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64ToUint8(VAPID_PUBLIC_KEY)});
+    const auth=await deriveAuth(pass);
+    const res=await fetch(REFRESH_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({auth, sub})});
+    if(res.status===401) throw new Error("hasło nie pasuje do konfiguracji Workera");
+    if(!res.ok) throw new Error("Worker "+res.status);
+    save("briefing-v1", true);
+    alert("Włączone ✅ Poranny briefing przyjdzie po porannej aktualizacji danych (~07:00)."); render();
+  }catch(e){ alert("Nie udało się włączyć briefingu: "+((e&&e.message)||e)); }
+}
+async function disableBriefing(){
+  save("briefing-v1", false);
+  try{ const reg=await navigator.serviceWorker.ready; const s=await reg.pushManager.getSubscription(); if(s) await s.unsubscribe(); }catch(e){}
+  render();
+}
+
 async function deriveAuth(pass){
   const bk=await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"]);
   const bits=await crypto.subtle.deriveBits(
@@ -499,9 +995,12 @@ async function decryptBlob(blob, pass){
   const pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(blob.iv)}, key, b64ToBytes(blob.ct));
   return JSON.parse(new TextDecoder().decode(pt));
 }
-let _pass=null;                          // haslo trzymamy TYLKO w pamieci sesji
-function getPass(){ return _pass; }
-function setPass(p){ _pass=p; }
+// Haslo: zapamietane na TYM urzadzeniu (localStorage), zeby nie podawac go po kazdym odswiezeniu.
+// Ochrona danych opiera sie wtedy na blokadzie urzadzenia. Mozesz je wyczyscic: „zapomnij haslo" w stopce.
+let _pass=null;
+function getPass(){ if(_pass!=null) return _pass; const p=load('pw-v1', null); if(p!=null) _pass=p; return _pass; }
+function setPass(p){ _pass=p; try{ if(p) localStorage.setItem('pw-v1', JSON.stringify(p)); else localStorage.removeItem('pw-v1'); }catch(e){} }
+function forgetPass(){ setPass(null); gar=null; render(); }
 
 async function fetchRemote(){
   let blob;

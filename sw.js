@@ -1,4 +1,4 @@
-const CACHE = 'protokol-v5';
+const CACHE = 'protokol-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -46,4 +46,30 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((cached) => cached || fetch(e.request))
   );
+});
+
+// Poranny briefing (Web Push): pokaz powiadomienie z payloadu.
+self.addEventListener('push', (e) => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (_) { data = { body: e.data ? e.data.text() : '' }; }
+  const title = data.title || 'Protokół — poranny briefing';
+  const opts = {
+    body: data.body || 'Twój plan na dziś jest gotowy.',
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    tag: 'daily-briefing',
+    renotify: true,
+    data: { url: data.url || './' }
+  };
+  e.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if ('focus' in c) return c.focus(); }
+    if (self.clients.openWindow) return self.clients.openWindow(url);
+  })());
 });

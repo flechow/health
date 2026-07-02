@@ -28,6 +28,9 @@ export default {
     if (!expected) return json({ error: "server_not_configured" }, 500, cors);
     if (!auth || !timingSafeEqual(auth, expected)) return json({ error: "unauthorized" }, 401, cors);
 
+    // Rejestracja powiadomien push: zapisz subskrypcje w repo (push/subscriptions.json).
+    if (body && body.sub) return await storeSubscription(env, body.sub, cors);
+
     const repo = env.GH_REPO;                       // np. "flechow/health"
     const wf = env.GH_WORKFLOW || "update.yml";
     const ref = env.GH_REF || "main";
@@ -58,6 +61,37 @@ function json(obj, status, cors) {
     status,
     headers: { ...cors, "Content-Type": "application/json" }
   });
+}
+
+// Zapis/aktualizacja subskrypcji push w pliku repo push/subscriptions.json (upsert po endpoint).
+// Wymaga, by GH_TOKEN mial uprawnienie contents:write do repo.
+async function storeSubscription(env, sub, cors) {
+  const ep = sub && sub.endpoint;
+  if (!ep) return json({ error: "bad_sub" }, 400, cors);
+  const repo = env.GH_REPO, ref = env.GH_REF || "main", path = "push/subscriptions.json";
+  const gh = {
+    "Authorization": `Bearer ${env.GH_TOKEN}`,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "protokol-refresh-worker"
+  };
+  let list = [], sha;
+  const get = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}?ref=${ref}`, { headers: gh });
+  if (get.status === 200) {
+    const j = await get.json();
+    sha = j.sha;
+    try { const parsed = JSON.parse(atob((j.content || "").replace(/\n/g, ""))); if (Array.isArray(parsed)) list = parsed; } catch (_) {}
+  }
+  list = list.filter((s) => s && s.endpoint !== ep);
+  list.push(sub);
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(list, null, 2))));
+  const put = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}`, {
+    method: "PUT", headers: gh,
+    body: JSON.stringify({ message: "Rejestracja subskrypcji push", content, sha, branch: ref })
+  });
+  if (put.status === 200 || put.status === 201) return json({ ok: true, count: list.length }, 200, cors);
+  const detail = (await put.text()).slice(0, 300);
+  return json({ error: "store_failed", status: put.status, detail }, 502, cors);
 }
 
 // Porównanie o stałym czasie (nie ujawnia długości dopasowania przez timing).
