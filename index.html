@@ -109,6 +109,43 @@
   .exhist{font-size:11.5px; color:var(--mut2); margin-top:4px; font-variant-numeric:tabular-nums;}
   .chip{display:inline-block; background:rgba(245,158,11,.16); color:var(--amber-l); border-radius:8px;
     padding:1px 7px; font-weight:600; font-size:11px;}
+  /* Etap 2 + interaktywne objaśnienia */
+  .info{display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px;
+    border-radius:999px; border:1px solid #3a3a3a; color:var(--mut2); font-size:10px; font-weight:700;
+    font-style:italic; margin-left:5px; vertical-align:middle; font-family:Georgia,serif;}
+  [data-info]{cursor:pointer;}
+  .prio{display:flex; gap:11px; align-items:flex-start; padding:11px 0;}
+  .prio+.prio{border-top:1px solid #1f1f1f;}
+  .prio .pic{font-size:20px; line-height:1.1; flex:0 0 auto;}
+  .prio .pt{font-size:14px; font-weight:600; line-height:1.25;}
+  .prio .pn{font-size:12.5px; color:var(--mut); margin-top:3px; line-height:1.4;}
+  .prio .rank{margin-left:auto; font-size:11px; color:var(--mut2); font-variant-numeric:tabular-nums; padding-top:2px;}
+  .acwr-top{display:flex; align-items:center; gap:11px; margin-top:8px;}
+  .acwr-v{font-size:34px; font-weight:600; line-height:1;}
+  .acwr-lab{font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px;}
+  .acwr-bar{position:relative; height:10px; border-radius:999px; background:#232323; margin-top:16px;}
+  .acwr-sweet{position:absolute; top:0; bottom:0; background:rgba(16,185,129,.30); border-radius:2px;}
+  .acwr-mark{position:absolute; top:-3px; width:3px; height:16px; border-radius:2px; background:var(--tx);}
+  .acwr-sc{display:flex; justify-content:space-between; font-size:11px; color:var(--mut2); margin-top:6px;}
+  .phase-card{background:linear-gradient(135deg,#1c1810,#161616); border-color:#3a2f14;}
+  .sheet{position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50; opacity:0; transition:opacity .18s;}
+  .sheet.on{opacity:1;}
+  .sheet-card{background:var(--card); border:1px solid var(--bd); border-bottom:0;
+    border-radius:20px 20px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom));
+    width:100%; max-width:460px; transform:translateY(100%); transition:transform .22s;
+    max-height:82vh; overflow-y:auto;}
+  .sheet.on .sheet-card{transform:translateY(0);}
+  .sheet .grip{width:38px; height:4px; border-radius:999px; background:#333; margin:0 auto 14px;}
+  .sheet h3{margin:0; font-size:18px; font-weight:600;}
+  .sheet .sbody{font-size:14px; color:var(--tx); line-height:1.55; margin-top:12px;}
+  .sheet .sbody p{margin:0 0 11px;}
+  .sheet .sbody .t{color:var(--amber-l); font-weight:600;}
+  .sheet .close{width:100%; margin-top:6px; border:0; border-radius:14px; padding:13px; font-size:15px;
+    font-weight:600; background:#232323; color:var(--tx); cursor:pointer;}
+  .toggle{display:inline-block; margin-top:8px; font-size:12px; color:var(--mut); cursor:pointer;
+    border:1px solid var(--bd); border-radius:999px; padding:6px 13px;}
+  .toggle b{color:var(--amber-l); font-weight:600;}
 </style>
 </head>
 <body>
@@ -118,6 +155,15 @@
 <script>
 const START=116, GOAL=90;
 const WL=["Pn","Wt","Śr","Cz","Pt","So","Nd"];
+
+// ===== FEATURE FLAG: interaktywne objaśnienia (dotknij metryki -> wytłumaczenie) =====
+// Domyślnie WŁĄCZONE. Możesz wyłączyć jednym dotknięciem w stopce apki (zapis w localStorage),
+// albo na stałe zmieniając poniższą wartość na false.
+const EXPLAIN_DEFAULT = true;
+function explainOn(){ const v=load('explain-v1', null); return v==null ? EXPLAIN_DEFAULT : !!v; }
+function setExplain(on){ save('explain-v1', !!on); }
+function ib(key){ return explainOn() ? ` <span class="info" data-info="${key}">i</span>` : ""; }   // znaczek + cel
+function ic(){ return explainOn() ? ` <span class="info">i</span>` : ""; }                          // sam znaczek (kontener ma data-info)
 
 // Plan treningowy. ZRODLO PRAWDY to plik plan.json (pobierany przy kazdym wejsciu).
 // DEFAULT_PLAN to tylko kopia awaryjna na offline / pierwsze uruchomienie — edytuj plan.json, nie to.
@@ -147,10 +193,22 @@ const DEFAULT_PLAN={
  ]};
 let PLANDATA=DEFAULT_PLAN;
 
-function activePhase(){ const p=(PLANDATA&&PLANDATA.phases)||[]; return p.find(x=>x.id===PLANDATA.activePhase)||p[0]||null; }
+// Override auto-progresji faz (localStorage): {activePhase, starts:{ "<id>":"YYYY-MM-DD" }}
+function planOverride(){ return load('plan-override-v1', null); }
+function activePhase(){
+  const p=(PLANDATA&&PLANDATA.phases)||[];
+  const ov=planOverride();
+  const id=(ov&&ov.activePhase!=null)?ov.activePhase:PLANDATA.activePhase;
+  return p.find(x=>x.id===id)||p[0]||null;
+}
+function phaseStart(ph){
+  const ov=planOverride();
+  return (ov&&ov.starts&&ov.starts[ph.id]) || (ph&&ph.startDate) || null;
+}
 function phaseWeek(ph){
-  if(!ph||!ph.startDate) return 1;
-  const s=new Date(ph.startDate+"T00:00:00");
+  const sd=phaseStart(ph);
+  if(!ph||!sd) return 1;
+  const s=new Date(sd+"T00:00:00");
   if(isNaN(s)) return 1;
   const w=Math.floor((Date.now()-s.getTime())/(7*86400000))+1;
   return Math.max(1, Math.min(w, ph.weeks||99));
@@ -189,14 +247,14 @@ function readiness(rows){
   const r=lastRow(rows);
   const F=[];
   const hrvBase=baseField(rows,"hrv",14), rhrBase=baseField(rows,"rhr",14);
-  if(r.gotowosc!=null) F.push({label:"Gotowość",score:clampv(r.gotowosc,0,100),note:Math.round(r.gotowosc),weight:3});
-  if(r.hrv!=null&&hrvBase) F.push({label:"HRV",score:lerp(r.hrv/hrvBase,0.80,1.10,25,92),note:Math.round(r.hrv)+" ms",weight:2});
-  else if(r.hrv!=null) F.push({label:"HRV",score:60,note:Math.round(r.hrv)+" ms",weight:1});
-  if(r.rhr!=null&&rhrBase) F.push({label:"Tętno sp.",score:lerp(r.rhr-rhrBase,8,-2,30,90),note:Math.round(r.rhr)+" bpm",weight:1.5});
-  if(r.sen!=null) F.push({label:"Sen",score:lerp(r.sen,4.5,7.8,25,92),note:r.sen+" h",weight:1.5});
-  if(r.bb_max!=null) F.push({label:"Body Battery",score:clampv(r.bb_max,0,100),note:Math.round(r.bb_max),weight:1});
-  if(r.stres!=null) F.push({label:"Stres",score:clampv(100-r.stres,0,100),note:Math.round(r.stres),weight:1});
-  if(r.recovery_h!=null) F.push({label:"Do regen.",score:lerp(r.recovery_h,0,36,92,30),note:Math.round(r.recovery_h)+" h",weight:1});
+  if(r.gotowosc!=null) F.push({key:"gotowosc",label:"Gotowość",score:clampv(r.gotowosc,0,100),note:Math.round(r.gotowosc),weight:3});
+  if(r.hrv!=null&&hrvBase) F.push({key:"hrv",label:"HRV",score:lerp(r.hrv/hrvBase,0.80,1.10,25,92),note:Math.round(r.hrv)+" ms",weight:2});
+  else if(r.hrv!=null) F.push({key:"hrv",label:"HRV",score:60,note:Math.round(r.hrv)+" ms",weight:1});
+  if(r.rhr!=null&&rhrBase) F.push({key:"rhr",label:"Tętno sp.",score:lerp(r.rhr-rhrBase,8,-2,30,90),note:Math.round(r.rhr)+" bpm",weight:1.5});
+  if(r.sen!=null) F.push({key:"sen",label:"Sen",score:lerp(r.sen,4.5,7.8,25,92),note:r.sen+" h",weight:1.5});
+  if(r.bb_max!=null) F.push({key:"bodybattery",label:"Body Battery",score:clampv(r.bb_max,0,100),note:Math.round(r.bb_max),weight:1});
+  if(r.stres!=null) F.push({key:"stres",label:"Stres",score:clampv(100-r.stres,0,100),note:Math.round(r.stres),weight:1});
+  if(r.recovery_h!=null) F.push({key:"recovery",label:"Do regen.",score:lerp(r.recovery_h,0,36,92,30),note:Math.round(r.recovery_h)+" h",weight:1});
   if(!F.length) return {score:null,zone:"none",factors:[],hasData:false};
   const wsum=F.reduce((s,f)=>s+f.weight,0);
   let score=F.reduce((s,f)=>s+f.score*f.weight,0)/wsum;
@@ -372,14 +430,14 @@ function garminCard(){
   return `<div class="card">
     <p class="label">Regeneracja (z Garmina)</p>
     <div class="metrics">
-      <div class="m"><div class="mv mono">${r1(hrv7)}<span style="font-size:13px;color:var(--mut)"> ms</span>${arr(hrvTrend,true)}</div><div class="ml">HRV nocne (śr. 7 dni)</div></div>
-      <div class="m"><div class="mv mono">${r1(rhr7)}<span style="font-size:13px;color:var(--mut)"> bpm</span>${arr(rhrTrend,false)}</div><div class="ml">Tętno spoczynkowe</div></div>
-      <div class="m"><div class="mv mono">${r1(sen7)}<span style="font-size:13px;color:var(--mut)"> h</span></div><div class="ml">Sen (śr. 7 dni)${senStd!=null?` · ±${r1(senStd)}h`:""}</div></div>
-      <div class="m"><div class="mv mono">${steps7!=null?Math.round(steps7).toLocaleString("pl-PL"):"—"}</div><div class="ml">Kroki (śr. 7 dni)</div></div>
-      ${bb!=null?`<div class="m"><div class="mv mono">${Math.round(bb)}</div><div class="ml">Body Battery (szczyt)</div></div>`:""}
-      ${stres!=null?`<div class="m"><div class="mv mono">${Math.round(stres)}</div><div class="ml">Stres (śr. dzień)</div></div>`:""}
-      ${spo2!=null?`<div class="m"><div class="mv mono">${r1(spo2)}<span style="font-size:13px;color:var(--mut)">%</span></div><div class="ml">SpO₂ we śnie${spo2min!=null?` · min ${r1(spo2min)}`:""}</div></div>`:""}
-      ${tnoc!=null?`<div class="m"><div class="mv mono">${r1(tnoc)}<span style="font-size:13px;color:var(--mut)">°C</span></div><div class="ml">Temp. w nocy</div></div>`:""}
+      <div class="m" data-info="hrv"><div class="mv mono">${r1(hrv7)}<span style="font-size:13px;color:var(--mut)"> ms</span>${arr(hrvTrend,true)}</div><div class="ml">HRV nocne (śr. 7 dni)${ic()}</div></div>
+      <div class="m" data-info="rhr"><div class="mv mono">${r1(rhr7)}<span style="font-size:13px;color:var(--mut)"> bpm</span>${arr(rhrTrend,false)}</div><div class="ml">Tętno spoczynkowe${ic()}</div></div>
+      <div class="m" data-info="sen"><div class="mv mono">${r1(sen7)}<span style="font-size:13px;color:var(--mut)"> h</span></div><div class="ml">Sen (śr. 7 dni)${senStd!=null?` · ±${r1(senStd)}h`:""}${ic()}</div></div>
+      <div class="m" data-info="steps"><div class="mv mono">${steps7!=null?Math.round(steps7).toLocaleString("pl-PL"):"—"}</div><div class="ml">Kroki (śr. 7 dni)${ic()}</div></div>
+      ${bb!=null?`<div class="m" data-info="bodybattery"><div class="mv mono">${Math.round(bb)}</div><div class="ml">Body Battery (szczyt)${ic()}</div></div>`:""}
+      ${stres!=null?`<div class="m" data-info="stres"><div class="mv mono">${Math.round(stres)}</div><div class="ml">Stres (śr. dzień)${ic()}</div></div>`:""}
+      ${spo2!=null?`<div class="m" data-info="spo2"><div class="mv mono">${r1(spo2)}<span style="font-size:13px;color:var(--mut)">%</span></div><div class="ml">SpO₂ we śnie${spo2min!=null?` · min ${r1(spo2min)}`:""}${ic()}</div></div>`:""}
+      ${tnoc!=null?`<div class="m" data-info="tempnoc"><div class="mv mono">${r1(tnoc)}<span style="font-size:13px;color:var(--mut)">°C</span></div><div class="ml">Temp. w nocy${ic()}</div></div>`:""}
     </div>
     <div style="margin-top:14px"><p class="label" style="margin-bottom:6px">HRV — 30 dni</p>${spark(nz(hrv).slice(-30),"#10b981")}</div>
     <div class="sub">Status HRV: <b style="color:var(--tx)">${statusPL}</b></div>
@@ -404,13 +462,146 @@ function kondycjaCard(){
   return `<div class="card">
     <p class="label">Kondycja (silnik tlenowy)</p>
     <div class="metrics">
-      ${vo2!=null?`<div class="m"><div class="mv mono">${r1(vo2)}${arr(vo2tr,true)}</div><div class="ml">VO₂max</div></div>`:""}
-      ${minInt!=null?`<div class="m"><div class="mv mono">${Math.round(minInt)}<span style="font-size:13px;color:var(--mut)"> min</span></div><div class="ml">Minuty intensywne (7 dni)</div></div>`:""}
-      ${load!=null?`<div class="m"><div class="mv mono">${Math.round(load)}</div><div class="ml">Obciążenie treningowe</div></div>`:""}
-      ${endur!=null?`<div class="m"><div class="mv mono">${Math.round(endur)}</div><div class="ml">Endurance score</div></div>`:""}
+      ${vo2!=null?`<div class="m" data-info="vo2max"><div class="mv mono">${r1(vo2)}${arr(vo2tr,true)}</div><div class="ml">VO₂max${ic()}</div></div>`:""}
+      ${minInt!=null?`<div class="m" data-info="minint"><div class="mv mono">${Math.round(minInt)}<span style="font-size:13px;color:var(--mut)"> min</span></div><div class="ml">Minuty intensywne (7 dni)${ic()}</div></div>`:""}
+      ${load!=null?`<div class="m" data-info="trainingload"><div class="mv mono">${Math.round(load)}</div><div class="ml">Obciążenie treningowe${ic()}</div></div>`:""}
+      ${endur!=null?`<div class="m" data-info="endurance"><div class="mv mono">${Math.round(endur)}</div><div class="ml">Endurance score${ic()}</div></div>`:""}
     </div>
     ${vo2vals.length>2?`<div style="margin-top:14px"><p class="label" style="margin-bottom:6px">VO₂max — trend</p>${spark(vo2vals.slice(-30),"#6366f1")}</div>`:""}
     ${tstatus?`<div class="sub">Status treningu: <b style="color:var(--tx)">${tstatus}</b></div>`:""}
+  </div>`;
+}
+
+// ===== Treści objaśnień (dotknij metryki) =====
+const INFO = {
+ readiness:{t:"Gotowość dnia (0–100)",h:`<p>Jeden wskaźnik łączący Twoje nocne sygnały z Garmina: gotowość treningową, HRV względem Twojej bazy, tętno spoczynkowe, sen, Body Battery, stres i czas do regeneracji. Każdy sygnał ma swoją wagę.</p><p><span class="t">67–100</span> zielony — możesz inwestować (siła, akcenty). <span class="t">45–66</span> żółty — trzymaj lekko. <span class="t">0–44</span> czerwony — dziś regeneracja.</p><p>To nie ocena Ciebie — to informacja, ile organizm dziś udźwignie bez cofania progresu.</p>`},
+ hrv:{t:"HRV — zmienność rytmu serca",h:`<p>Odstęp między uderzeniami serca w nocy. Wyższy = układ nerwowy wypoczęty i zbalansowany; niższy = zmęczenie, stres, infekcja lub za mało snu.</p><p>Liczy się <b>trend względem Twojej własnej bazy</b>, nie porównania z innymi. Spadek o ponad 15% pod bazę to sygnał, żeby odpuścić.</p><p class="t">Cel fazy 1: odwrócić trend w górę, 55+ ms.</p>`},
+ rhr:{t:"Tętno spoczynkowe",h:`<p>Ile uderzeń na minutę robi serce w pełnym spoczynku. Niższe zwykle znaczy lepszą kondycję i lepsze wypoczęcie.</p><p>Nagły wzrost o 5–7 uderzeń ponad bazę = niedospanie, stres lub nadchodząca choroba — dobry powód na lżejszy dzień.</p><p class="t">Kierunek: w dół wraz z poprawą kondycji.</p>`},
+ sen:{t:"Sen",h:`<p>Fundament regeneracji, gospodarki hormonalnej i apetytu. Za mało snu = większy głód, gorsze decyzje żywieniowe i słabszy trening.</p><p>Ważna jest nie tylko długość, ale <b>stałość pór</b>. Kładzenie się o podobnej godzinie stabilizuje HRV i Body Battery.</p><p class="t">Cel: 7–8 h, w łóżku przed 22:00.</p>`},
+ bodybattery:{t:"Body Battery",h:`<p>Szacunek Garmina Twojej „baterii" energii (0–100) na bazie HRV, stresu, snu i aktywności. Rośnie w odpoczynku, spada przy wysiłku i stresie.</p><p>Wysoki poranny poziom = dobry moment na mocniejszy trening. Niski = priorytet regeneracja.</p>`},
+ stres:{t:"Stres (Garmin)",h:`<p>Wskaźnik 0–100 z analizy HRV w ciągu dnia. Wyższy = dłuższa aktywacja „walcz lub uciekaj" (praca, kawa, niedospanie).</p><p>Przewlekle wysoki stres blokuje regenerację i spalanie tłuszczu. Oddech nosem, spacery i sen go obniżają.</p>`},
+ recovery:{t:"Czas do regeneracji",h:`<p>Ile godzin Garmin sugeruje do pełnego wypoczęcia po ostatnim wysiłku. Wysoka wartość rano = ciało jeszcze pracuje nad naprawą.</p><p>Trening na dużym „długu" regeneracyjnym daje słabszy efekt i większe ryzyko kontuzji.</p>`},
+ gotowosc:{t:"Gotowość treningowa (Garmin)",h:`<p>Ocena Garmina 0–100, jak bardzo jesteś gotów na wysiłek — łączy sen, HRV, obciążenie i czas regeneracji. To najsilniejszy pojedynczy sygnał w naszym liczniku dnia.</p>`},
+ vo2max:{t:"VO₂max",h:`<p>Maksymalny pobór tlenu — miara mocy silnika tlenowego i jeden z najlepszych pojedynczych predyktorów zdrowia i długowieczności.</p><p>Rośnie od regularnej Zone 2 i okazjonalnych akcentów tempowych. Zmiany są powolne — patrz na trend miesięczny.</p><p class="t">Cel: 40.</p>`},
+ trainingload:{t:"Obciążenie treningowe",h:`<p>Suma wysiłku z ostatnich dni (Garmin, ~7-dniowe). Pokazuje, ile pracy włożyłeś — samo w sobie nie mówi, czy to za dużo. Od tego jest wskaźnik ryzyka poniżej.</p>`},
+ acwr:{t:"Ryzyko przetrenowania (ostre : przewlekłe)",h:`<p>Stosunek objętości z <b>ostatnich 7 dni</b> do Twojej średniej tygodniowej z <b>28 dni</b>. Mówi, czy nie rozpędzasz się za szybko.</p><p><span class="t">0,8–1,3</span> słodki punkt — bezpieczny wzrost formy. <span class="t">powyżej 1,5</span> skok objętości = ryzyko kontuzji i przetrenowania. <span class="t">poniżej 0,8</span> tracisz formę, można dołożyć.</p><p>Zasada: zwiększaj objętość o maks. ~10% tygodniowo.</p>`},
+ endurance:{t:"Endurance score",h:`<p>Ocena Garmina Twojej wytrzymałości długodystansowej — im więcej regularnej pracy tlenowej, tym wyżej. Uzupełnia VO₂max o wymiar „ile wytrzymasz", nie tylko „jak mocno".</p>`},
+ minint:{t:"Minuty intensywne",h:`<p>Minuty w umiarkowanej i wysokiej intensywności (Garmin). WHO zaleca 150+ tygodniowo dla zdrowia. U nas to też miara objętości do liczenia ryzyka przetrenowania.</p><p class="t">Cel: 150+ / tydzień.</p>`},
+ steps:{t:"Kroki / NEAT",h:`<p>Codzienna aktywność poza treningiem (NEAT) to często największy, niedoceniany wydatek kalorii w redukcji — i łatwiejszy do utrzymania niż dokładanie ciężkich treningów.</p><p class="t">Cel: 7–8 tys. dziennie.</p>`},
+ focus:{t:"Focus dnia i RPE",h:`<p>Aplikacja bierze Twój plan na dziś i dostraja go do gotowości: przy słabym dniu siłownia zamienia się w spokojny tlen lub regenerację, przy dobrym — dostajesz zielone światło, by docisnąć.</p><p><b>RPE</b> to skala odczuwanego wysiłku 1–10. <span class="t">RPE 7</span> = zostają ~3 powtórzenia w zapasie (technika). <span class="t">RPE 8</span> = zostają ~2 (docisk).</p>`},
+ strength:{t:"Siła i progresja",h:`<p>Progres to <b>stopniowe przeciążanie</b>: gdy ciężar staje się łatwy (dwie sesje z zapasem), dokładasz trochę. Aplikacja podpowiada +2,5 kg (góra ciała) lub +5 kg (dół).</p><p>Siła w redukcji chroni mięśnie — schodzisz z wagi, ale zostajesz silny i utrzymujesz metabolizm.</p>`},
+ zone2:{t:"Zone 2 — baza tlenowa",h:`<p>Spokojny wysiłek, przy którym dasz radę mówić pełnymi zdaniami (tętno ~125–140, oddech nosem). Buduje mitochondria i zdolność spalania tłuszczu.</p><p>Nuda jest celem — to ma być łatwe. Objętość rośnie stopniowo z tygodniami.</p>`},
+ rest:{t:"Regeneracja aktywna",h:`<p>Dzień na odbudowę: spacer, mobilność, rozciąganie, oddech. Postęp dzieje się <b>między</b> treningami — bez regeneracji nie ma adaptacji.</p>`},
+ phase:{t:"Fazy planu",h:`<p>Plan idzie etapami: najpierw baza tlenowa i wzorce ruchu, potem rozbudowa (akcenty tempowe, cięższa siła). Gdy faza dobiega końca, aplikacja proponuje przejście dalej — jednym dotknięciem.</p>`},
+ priorities:{t:"Priorytety tygodnia",h:`<p>Na podstawie Twoich trendów aplikacja wybiera 1–3 rzeczy, które w tym tygodniu dadzą najwięcej — czy to sen, kroki, objętość, czy odpuszczenie. Skup się na nich, resztę po prostu trzymaj.</p>`},
+ tghdl:{t:"TG / HDL",h:`<p>Trójglicerydy podzielone przez „dobry" cholesterol HDL — prosty, mocny wskaźnik zdrowia metabolicznego i insulinowrażliwości.</p><p>Spada od redukcji tłuszczu, ruchu i ograniczenia cukrów prostych. Wpisz wyniki z badań krwi, by śledzić.</p><p class="t">Cel: poniżej 3 (idealnie poniżej 2).</p>`},
+ weight:{t:"Waga i tempo",h:`<p>Patrz na <b>trend</b>, nie na pojedynczy dzień — waga skacze od wody, soli i jedzenia. Zdrowe tempo w redukcji to ok. 0,5–1% masy ciała na tydzień.</p><p>Zbyt szybko = tracisz mięśnie i HRV. Wolno i stabilnie wygrywa.</p>`},
+ spo2:{t:"SpO₂ we śnie",h:`<p>Wysycenie krwi tlenem w nocy. Zdrowe wartości to zwykle 94–99%. Regularnie niskie minima mogą sugerować gorszą jakość oddechu we śnie — warto obserwować.</p>`},
+ tempnoc:{t:"Temperatura w nocy",h:`<p>Nocne minimum w Twojej okolicy (z danych pogodowych). Ciepłe noce potrafią pogarszać sen i podnosić tętno spoczynkowe — to kontekst do interpretacji regeneracji.</p>`}
+};
+
+let _sheetOpen=false;
+function showSheet(key){
+  const info=INFO[key]; if(!info||_sheetOpen) return;
+  _sheetOpen=true;
+  const el=document.createElement("div"); el.className="sheet";
+  el.innerHTML=`<div class="sheet-card"><div class="grip"></div><h3>${info.t}</h3>
+    <div class="sbody">${info.h}</div><button class="close">Rozumiem</button></div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add("on"));
+  const close=()=>{ el.classList.remove("on"); _sheetOpen=false; setTimeout(()=>el.remove(),220); };
+  el.addEventListener("click",(e)=>{ if(e.target===el || e.target.classList.contains("close")) close(); });
+}
+
+// ===== Ryzyko przetrenowania: ostre (7 dni) : przewlekłe (śr. tyg. z 28 dni) =====
+function acwrData(rows){
+  const load=rows.map(r=> (r.min_intensywne!=null&&!isNaN(r.min_intensywne))? r.min_intensywne : 0);
+  const present=rows.slice(-28).filter(r=> r.min_intensywne!=null&&!isNaN(r.min_intensywne)).length;
+  if(rows.length<21 || present<10) return null;              // za mało danych na sensowny wskaźnik
+  const sum=(a)=>a.reduce((s,x)=>s+x,0);
+  const acute=sum(load.slice(-7));
+  const chronic=sum(load.slice(-28))/4;
+  if(chronic<=0) return acute>0 ? {ratio:null,acute,chronic:0,zone:"ramp",label:"Rozpęd"} : null;
+  const ratio=acute/chronic;
+  let zone,label;
+  if(ratio<0.8){ zone="low"; label="Niedociążenie"; }
+  else if(ratio<=1.3){ zone="opt"; label="Optymalnie"; }
+  else if(ratio<=1.5){ zone="watch"; label="Uwaga"; }
+  else { zone="high"; label="Wysokie ryzyko"; }
+  return {ratio,acute,chronic,zone,label};
+}
+function acwrCard(){
+  if(!gar||!gar.rows) return "";
+  const a=acwrData(gar.rows); if(!a) return "";
+  const col={low:"#8a8a8a",opt:"#10b981",watch:"#f59e0b",high:"#ef4444",ramp:"#6366f1"}[a.zone]||"#8a8a8a";
+  const ratioTxt=a.ratio!=null ? a.ratio.toFixed(2).replace(".",",") : "—";
+  const sweetL=0.8/2*100, sweetW=(1.3-0.8)/2*100;
+  const markPos=a.ratio!=null ? Math.min(100, a.ratio/2*100) : 0;
+  return `<div class="card" data-info="acwr">
+    <p class="label">Ryzyko przetrenowania${ic()}</p>
+    <div class="acwr-top">
+      <div class="acwr-v mono" style="color:${col}">${ratioTxt}</div>
+      <div class="acwr-lab" style="background:${col}22;color:${col}">${a.label}</div>
+    </div>
+    <div class="acwr-bar"><div class="acwr-sweet" style="left:${sweetL}%;width:${sweetW}%"></div>
+      ${a.ratio!=null?`<div class="acwr-mark" style="left:calc(${markPos}% - 1.5px)"></div>`:""}</div>
+    <div class="acwr-sc"><span>0,8</span><span>słodki punkt</span><span>1,5+</span></div>
+    <div class="sub" style="margin-top:11px">Ostatnie 7 dni: <b style="color:var(--tx)">${Math.round(a.acute)} min</b> · baza tygodniowa: ${Math.round(a.chronic)} min</div>
+  </div>`;
+}
+
+// ===== Priorytety tygodnia: 1–3 rzeczy o największym zwrocie, z Twoich trendów =====
+function priorities(rows){
+  const nzslice=(k,n)=>rows.map(r=>r[k]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
+  const avg=(a)=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+  const hrvArr=nzslice("hrv",14), hrv7=avg(hrvArr.slice(-7)), hrvPrev=hrvArr.length>7?avg(hrvArr.slice(0,hrvArr.length-7)):null;
+  const hrvTrend=(hrv7!=null&&hrvPrev!=null)?hrv7-hrvPrev:null;
+  const steps7=avg(nzslice("kroki",7));
+  const senArr=nzslice("sen",14), sen7=avg(senArr.slice(-7));
+  const senStd=senArr.length>2?Math.sqrt(avg(senArr.map(x=>Math.pow(x-avg(senArr),2)))):null;
+  let status=""; for(let i=rows.length-1;i>=0;i--){ if(rows[i].status){ status=(rows[i].status||"").toUpperCase(); break; } }
+  const a=acwrData(rows);
+  const vo2=nzslice("vo2max",60), vo2Trend=vo2.length>10?vo2[vo2.length-1]-vo2[0]:null;
+  const C=[];
+  if(status==="POOR"||status==="LOW"||(hrvTrend!=null&&hrvTrend<-3))
+    C.push({key:"recovery",icon:"🛌",title:"Regeneracja na pierwszym miejscu",note:"HRV pod kreską — więcej snu, mniej intensywności.",weight:9});
+  if(a&&a.zone==="high")
+    C.push({key:"acwr",icon:"⚠️",title:"Zejdź z objętości",note:"Ostry skok obciążenia — ryzyko przetrenowania. Utrzymaj, nie dokładaj.",weight:8.5});
+  if((senStd!=null&&senStd>1.2)||(sen7!=null&&sen7<6.5))
+    C.push({key:"sen",icon:"😴",title:"Ustabilizuj sen",note:"Stałe pory snu podbiją HRV i regenerację szybciej niż cokolwiek innego.",weight:7.5});
+  if(steps7!=null&&steps7<7000)
+    C.push({key:"steps",icon:"🚶",title:"Dobij kroki (NEAT)",note:`Średnio ${Math.round(steps7/100)/10}k/dzień — celuj w 7–8k, to spory wydatek kalorii.`,weight:7});
+  if(a&&a.zone==="low")
+    C.push({key:"acwr",icon:"📈",title:"Można dołożyć objętości",note:"Masz zapas — bezpiecznie dorzuć jeden trening tlenowy w tym tygodniu.",weight:5.5});
+  if(vo2Trend!=null&&vo2Trend<=0)
+    C.push({key:"vo2max",icon:"🫁",title:"Rusz VO₂max",note:"Trend płaski — trzymaj Zone 2 i raz w tygodniu krótki akcent tempowy.",weight:5});
+  C.push({key:"strength",icon:"💪",title:"Nie odpuszczaj siły",note:"2 sesje w tygodniu chronią mięśnie w redukcji. Progresuj powoli.",weight:4});
+  C.push({key:"weight",icon:"⚖️",title:"Trzymaj stabilne tempo",note:"0,5–1% masy na tydzień. Patrz na trend, nie na pojedynczy dzień.",weight:3});
+  C.sort((x,y)=>y.weight-x.weight);
+  const seen=new Set(), out=[]; for(const c of C){ if(seen.has(c.key))continue; seen.add(c.key); out.push(c); if(out.length>=3)break; }
+  return out;
+}
+function prioritiesCard(){
+  if(!gar||!gar.rows||gar.rows.length<3) return "";
+  const ps=priorities(gar.rows); if(!ps.length) return "";
+  return `<div class="card">
+    <p class="label">W tym tygodniu — priorytety${ib('priorities')}</p>
+    ${ps.map((p,i)=>`<div class="prio" data-info="${p.key}"><div class="pic">${p.icon}</div>
+      <div style="flex:1;min-width:0"><div class="pt">${p.title}${ic()}</div><div class="pn">${p.note}</div></div>
+      <div class="rank">#${i+1}</div></div>`).join("")}
+  </div>`;
+}
+
+// ===== Auto-progresja faz: wykrycie końca + jedno kliknięcie do następnej =====
+function nextPhase(ph){ const p=(PLANDATA&&PLANDATA.phases)||[]; return ph?p.find(x=>x.id===ph.id+1)||null:null; }
+function phaseTransitionCard(ph, wk){
+  const np=nextPhase(ph); if(!np) return "";
+  if(wk < (ph.weeks||99)) return "";                          // faza jeszcze trwa
+  return `<div class="card phase-card">
+    <p class="label" style="color:var(--amber-l)">Koniec fazy${ib('phase')}</p>
+    <div class="focus-t" style="margin-top:6px">${ph.subtitle} zaliczona 🎉</div>
+    <div class="focus-w" style="margin-top:6px">Tydzień ${wk}/${ph.weeks}. Czas na <b style="color:var(--tx)">${np.subtitle}: ${np.name}</b>.</div>
+    <button class="act done" id="nextPhaseBtn">Rozpocznij ${np.subtitle}: ${np.name}</button>
   </div>`;
 }
 
@@ -447,10 +638,11 @@ function render(){
   const trained=wd.slice(0,6).filter(d=>(log.days[key(d)]||{}).trained).length;
   const f = dailyFocus(ph, wk, t.getDay(), rows);
   const isStrength = f.session.kind==="strength" && f.session.exercises && f.session.exercises.length;
+  const sessInfo = f.session.kind==="strength" ? "strength" : (f.session.kind==="rest" ? "rest" : "zone2");
   const doneTxt = f.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
                                           : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
   const factsHtml = f.ready.hasData
-    ? `<div class="facts">${f.ready.factors.map(x=>`<span class="fact"><span class="fdot" style="background:${factColor(x.score)}"></span>${x.label} <b>${x.note}</b></span>`).join("")}</div>`
+    ? `<div class="facts">${f.ready.factors.map(x=>`<span class="fact" data-info="${x.key||''}"><span class="fdot" style="background:${factColor(x.score)}"></span>${x.label} <b>${x.note}</b></span>`).join("")}</div>`
     : "";
 
   document.getElementById("app").innerHTML = `
@@ -469,13 +661,13 @@ function render(){
         <span class="zonepill ${zoneClass(f.ready.zone)}">${zoneLabel(f.ready.zone)}</span></div>
       <div class="wk">${ph.subtitle} · Tydzień ${wk}${ph.weeks?" / "+ph.weeks:""}</div>
       <div class="hero">
-        <div class="ringwrap">${ring(f.ready.score, f.ready.zone)}</div>
+        <div class="ringwrap" data-info="readiness">${ring(f.ready.score, f.ready.zone)}</div>
         <div class="htxt">
-          <div class="focus-t">${f.session.icon} ${f.title}</div>
+          <div class="focus-t" data-info="${sessInfo}">${f.session.icon} ${f.title}${ic()}</div>
           <div class="focus-w">${f.why}</div>
         </div>
       </div>
-      <div class="intens"><span class="il">${f.intensityL}</span><span>${f.intensityT}</span></div>
+      <div class="intens" data-info="focus"><span class="il">${f.intensityL}${ic()}</span><span>${f.intensityT}</span></div>
       ${factsHtml}
       <div class="row" style="margin-top:14px"><div style="flex:1">
         <div class="plan-name">${f.session.name}</div>
@@ -487,6 +679,10 @@ function render(){
       <button class="act sleep ${te.sleptEarly?"on":""}" data-x="sleptEarly">${te.sleptEarly?"😴 W łóżku przed 22:00":"W łóżku przed 22:00?"}</button>
     </div>
 
+    ${phaseTransitionCard(ph, wk)}
+
+    ${prioritiesCard()}
+
     <div class="card">
       <div class="between"><p class="label">Ten tydzień</p><p class="mono" style="color:var(--amber);margin:0;font-size:14px">${trained}/6</p></div>
       <div class="week">${wd.map((d,i)=>{const e=log.days[key(d)]||{};const tn=key(d)===tk;
@@ -495,7 +691,7 @@ function render(){
     </div>
 
     <div class="card">
-      <div class="between"><p class="label">Waga</p>${mw.length?`<p class="sub" style="margin:0">ost. ${r1(mw[mw.length-1].v)} kg</p>`:""}</div>
+      <div class="between"><p class="label" data-info="weight">Waga${ic()}</p>${mw.length?`<p class="sub" style="margin:0">ost. ${r1(mw[mw.length-1].v)} kg</p>`:""}</div>
       <div style="margin-top:12px">${spark(mw.slice(-20).map(p=>p.v),"#fbbf24")}</div>
       <div class="flex">
         <input type="text" id="w" inputmode="decimal" placeholder="np. 114,5" />
@@ -507,6 +703,8 @@ function render(){
 
     ${kondycjaCard()}
 
+    ${acwrCard()}
+
     ${gar?`<button class="refresh" id="refreshBtn">🔄 Odśwież dane z Garmina</button>`:""}
 
     <label class="imp" id="impbtn">📥 Import z pliku <b>(CSV)</b><br>
@@ -514,13 +712,17 @@ function render(){
 
     <div class="card">
       <p class="label">Cele fazy 1 (8–12 tyg.)</p>
-      <div class="tgt"><div><div class="n">TG / HDL</div><div class="note">główny licznik ryzyka</div></div><div class="mono" style="color:var(--mut)">${tghdl!=null?r1(tghdl):"—"} <span style="color:var(--amber)">→ &lt;3</span></div></div>
-      <div class="tgt"><div><div class="n">HRV nocne</div><div class="note">odwrócić trend w górę</div></div><div class="mono" style="color:var(--mut)">${hrvNow!=null?Math.round(hrvNow):"—"} <span style="color:var(--amber)">→ 55+</span></div></div>
-      <div class="tgt"><div><div class="n">Kroki / dzień</div><div class="note">średnia 7 dni</div></div><div class="mono" style="color:var(--mut)">${stepsNow!=null?(Math.round(stepsNow/100)/10)+"k":"—"} <span style="color:var(--amber)">→ 7–8k</span></div></div>
-      <div class="tgt"><div><div class="n">VO2max</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">${vo2Now!=null?Math.round(vo2Now):"—"} <span style="color:var(--amber)">→ 40</span></div></div>
+      <div class="tgt" data-info="tghdl"><div><div class="n">TG / HDL${ic()}</div><div class="note">główny licznik ryzyka</div></div><div class="mono" style="color:var(--mut)">${tghdl!=null?r1(tghdl):"—"} <span style="color:var(--amber)">→ &lt;3</span></div></div>
+      <div class="tgt" data-info="hrv"><div><div class="n">HRV nocne${ic()}</div><div class="note">odwrócić trend w górę</div></div><div class="mono" style="color:var(--mut)">${hrvNow!=null?Math.round(hrvNow):"—"} <span style="color:var(--amber)">→ 55+</span></div></div>
+      <div class="tgt" data-info="steps"><div><div class="n">Kroki / dzień${ic()}</div><div class="note">średnia 7 dni</div></div><div class="mono" style="color:var(--mut)">${stepsNow!=null?(Math.round(stepsNow/100)/10)+"k":"—"} <span style="color:var(--amber)">→ 7–8k</span></div></div>
+      <div class="tgt" data-info="vo2max"><div><div class="n">VO2max${ic()}</div><div class="note">silnik tlenowy</div></div><div class="mono" style="color:var(--mut)">${vo2Now!=null?Math.round(vo2Now):"—"} <span style="color:var(--amber)">→ 40</span></div></div>
     </div>
 
     <p class="foot">Dane zapisują się lokalnie na tym urządzeniu.</p>
+    <div style="text-align:center">
+      <span class="toggle" id="explainToggle">Objaśnienia (dotknij metryki): <b>${explainOn()?"włączone":"wyłączone"}</b> · zmień</span>
+      ${planOverride()?`<div><span class="toggle" id="phaseReset" style="margin-top:8px">↺ Cofnij ręczną zmianę fazy</span></div>`:""}
+    </div>
   `;
 
   document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{
@@ -538,7 +740,21 @@ function render(){
   const rb=document.getElementById("refreshBtn");
   if(rb){ rb.onclick=refreshFromGarmin; if(refreshing) setRefreshLabel("Aktualizuję… (do ~3 min)", true); }
   document.getElementById("impbtn").onclick=()=>document.getElementById("csv").click();
+  const npb=document.getElementById("nextPhaseBtn");
+  if(npb) npb.onclick=()=>{ const np=nextPhase(ph); if(!np) return;
+    const ov=load("plan-override-v1",{})||{}; ov.activePhase=np.id; ov.starts=ov.starts||{};
+    ov.starts[np.id]=key(monday(new Date())); save("plan-override-v1",ov); render(); };
+  const et=document.getElementById("explainToggle");
+  if(et) et.onclick=()=>{ setExplain(!explainOn()); render(); };
+  const pr=document.getElementById("phaseReset");
+  if(pr) pr.onclick=()=>{ try{ localStorage.removeItem("plan-override-v1"); }catch(e){} render(); };
 }
+
+// Interaktywne objaśnienia: jedno delegowane nasłuchiwanie, działa po każdym renderze.
+document.addEventListener("click",(e)=>{
+  const el=e.target.closest("[data-info]");
+  if(el && explainOn()) showSheet(el.getAttribute("data-info"));
+});
 
 document.getElementById("csv").onchange=(ev)=>{
   const f=ev.target.files[0]; if(!f)return;
