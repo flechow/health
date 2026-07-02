@@ -85,6 +85,30 @@
     margin-top:12px; cursor:pointer; color:var(--tx); background:#232323; transition:.15s;}
   button.refresh:active{background:#2c2c2c;}
   button.refresh:disabled{opacity:.55; cursor:default;}
+  /* Silnik Dnia */
+  .hero{display:flex; gap:16px; align-items:center; margin-top:14px;}
+  .ringwrap{flex:0 0 auto;}
+  .htxt{flex:1; min-width:0;}
+  .focus-t{font-size:17px; font-weight:600; letter-spacing:-.01em; line-height:1.2;}
+  .focus-w{font-size:13px; color:var(--mut); margin-top:5px; line-height:1.45;}
+  .zonepill{display:inline-block; font-size:11px; font-weight:600; padding:3px 10px; border-radius:999px;}
+  .z-green{background:rgba(16,185,129,.15); color:#34d399;}
+  .z-yellow{background:rgba(245,158,11,.16); color:#fbbf24;}
+  .z-red{background:rgba(239,68,68,.15); color:#f87171;}
+  .z-none{background:#232323; color:var(--mut);}
+  .intens{display:flex; gap:8px; align-items:baseline; margin-top:12px; padding:11px 13px;
+    background:var(--card2); border-radius:12px; font-size:13px; color:var(--tx); line-height:1.4;}
+  .intens .il{color:var(--amber-l); font-size:10.5px; font-weight:600; text-transform:uppercase;
+    letter-spacing:.08em; flex:0 0 auto;}
+  .facts{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;}
+  .fact{display:flex; align-items:center; gap:6px; font-size:11.5px; background:var(--card2);
+    border:1px solid var(--bd); border-radius:999px; padding:4px 10px; color:var(--mut);}
+  .fact b{color:var(--tx); font-weight:600;}
+  .fdot{width:7px; height:7px; border-radius:999px; flex:0 0 auto;}
+  /* Progresja siły */
+  .exhist{font-size:11.5px; color:var(--mut2); margin-top:4px; font-variant-numeric:tabular-nums;}
+  .chip{display:inline-block; background:rgba(245,158,11,.16); color:var(--amber-l); border-radius:8px;
+    padding:1px 7px; font-weight:600; font-size:11px;}
 </style>
 </head>
 <body>
@@ -149,64 +173,148 @@ function buildSession(ph, wk, dow){
   return s;
 }
 
-// ===== Adaptacyjna decyzja treningowa (progi do wspoldzielenia z przyszlym plan.py 'decide') =====
-const DEC={ readyRed:35, readyYel:58, hrvRedFrac:0.82, hrvYelFrac:0.92, rhrRedDelta:7, rhrYelDelta:4, sleepRed:5.0, sleepYel:6.2 };
-function baseline(rows, field, n){
+// ===== Silnik Dnia: readiness 0–100 z wielu sygnalow Garmina =====
+// Progi wspoldzielone z przyszlym plan.py: zielony >=67, zolty >=45, ponizej czerwony.
+function clampv(x,a,b){ return Math.max(a,Math.min(b,x)); }
+// mapuje x z [x0,x1] na [y0,y1] z obcieciem do zakresu wyjsciowego
+function lerp(x,x0,x1,y0,y1){ if(x1===x0) return y0; return clampv(y0+(y1-y0)*(x-x0)/(x1-x0), Math.min(y0,y1), Math.max(y0,y1)); }
+function lastRow(rows){ return rows[rows.length-1]||{}; }
+// srednia z ostatnich n dni Z WYLACZENIEM dzisiaj (baza odniesienia)
+function baseField(rows, field, n){
   const a=rows.slice(0,-1).map(r=>r[field]).filter(x=>x!=null&&!isNaN(x)).slice(-n);
   return a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
 }
-function decide(base, rows){
-  const r=rows[rows.length-1]||{};
-  const hrvBase=baseline(rows,"hrv",7), rhrBase=baseline(rows,"rhr",7);
+// Kazdy sygnal -> pod-wynik 0..100 + waga. Wynik dnia to srednia wazona.
+function readiness(rows){
+  const r=lastRow(rows);
+  const F=[];
+  const hrvBase=baseField(rows,"hrv",14), rhrBase=baseField(rows,"rhr",14);
+  if(r.gotowosc!=null) F.push({label:"Gotowość",score:clampv(r.gotowosc,0,100),note:Math.round(r.gotowosc),weight:3});
+  if(r.hrv!=null&&hrvBase) F.push({label:"HRV",score:lerp(r.hrv/hrvBase,0.80,1.10,25,92),note:Math.round(r.hrv)+" ms",weight:2});
+  else if(r.hrv!=null) F.push({label:"HRV",score:60,note:Math.round(r.hrv)+" ms",weight:1});
+  if(r.rhr!=null&&rhrBase) F.push({label:"Tętno sp.",score:lerp(r.rhr-rhrBase,8,-2,30,90),note:Math.round(r.rhr)+" bpm",weight:1.5});
+  if(r.sen!=null) F.push({label:"Sen",score:lerp(r.sen,4.5,7.8,25,92),note:r.sen+" h",weight:1.5});
+  if(r.bb_max!=null) F.push({label:"Body Battery",score:clampv(r.bb_max,0,100),note:Math.round(r.bb_max),weight:1});
+  if(r.stres!=null) F.push({label:"Stres",score:clampv(100-r.stres,0,100),note:Math.round(r.stres),weight:1});
+  if(r.recovery_h!=null) F.push({label:"Do regen.",score:lerp(r.recovery_h,0,36,92,30),note:Math.round(r.recovery_h)+" h",weight:1});
+  if(!F.length) return {score:null,zone:"none",factors:[],hasData:false};
+  const wsum=F.reduce((s,f)=>s+f.weight,0);
+  let score=F.reduce((s,f)=>s+f.score*f.weight,0)/wsum;
   const st=(r.status||"").toUpperCase();
-  let level=0; const why=[];
-  const bump=(lv,txt)=>{ level=Math.max(level,lv); if(txt)why.push([lv,txt]); };
-  if(r.gotowosc!=null){ if(r.gotowosc<DEC.readyRed)bump(2,`gotowość ${Math.round(r.gotowosc)}`); else if(r.gotowosc<DEC.readyYel)bump(1,`gotowość ${Math.round(r.gotowosc)}`); }
-  if(st==="POOR"||st==="LOW")bump(2,`HRV ${st==="POOR"?"słabe":"niskie"}`); else if(st==="UNBALANCED")bump(1,"HRV niezrównoważone");
-  if(r.hrv!=null&&hrvBase){ if(r.hrv<DEC.hrvRedFrac*hrvBase)bump(2,`HRV ${Math.round(r.hrv)} ms (baza ${Math.round(hrvBase)})`); else if(r.hrv<DEC.hrvYelFrac*hrvBase)bump(1,`HRV ${Math.round(r.hrv)} ms (baza ${Math.round(hrvBase)})`); }
-  if(r.sen!=null){ if(r.sen<DEC.sleepRed)bump(2,`sen ${r.sen} h`); else if(r.sen<DEC.sleepYel)bump(1,`sen ${r.sen} h`); }
-  if(r.rhr!=null&&rhrBase){ if(r.rhr>rhrBase+DEC.rhrRedDelta)bump(2,`tętno sp. ${Math.round(r.rhr)} (baza ${Math.round(rhrBase)})`); else if(r.rhr>rhrBase+DEC.rhrYelDelta)bump(1,`tętno sp. ${Math.round(r.rhr)}`); }
-
-  const planName=base.name;
-  const haveAny = r.gotowosc!=null||r.hrv!=null||r.sen!=null;
-  if(!haveAny) return {dot:"⚪",tag:"Brak danych",session:base,swapped:false,planName,why:"brak danych regeneracji — plan bazowy"};
-
-  const REST={kind:"rest",name:"Regeneracja",icon:"🧘",detail:"spacer · mobilność · rozciąganie · oddech",exercises:null};
-  const Z2={kind:"cardio",name:"Zone 2 — spokojnie",icon:"🚴",detail:"30–35 min · tętno 125–140 · oddech nosem",exercises:null};
-  let session=base, dot, tag;
-  if(level>=2){ dot="🔴"; tag="Regeneracja"; if(base.kind!=="rest")session=REST; }
-  else if(level===1){ dot="🟡"; tag="Lekko";
-    if(base.kind==="strength")session=Z2;
-    else if(base.kind==="cardio")session={...base,detail:base.detail+" · dziś krócej"}; }
-  else { dot="🟢"; tag="Gotowy"; if(base.kind==="strength")session={...base,detail:(base.detail?base.detail+" · ":"")+"możesz docisnąć"}; }
-
-  const swapped = session.name!==base.name;
-  let why_txt;
-  if(level===0){
-    const good=[]; if(r.gotowosc!=null)good.push(`gotowość ${Math.round(r.gotowosc)}`); if(r.hrv!=null)good.push(`HRV ${Math.round(r.hrv)} ms`); if(r.sen!=null)good.push(`sen ${r.sen} h`);
-    why_txt = good.slice(0,3).join(", ")+" → plan bez zmian";
-  } else {
-    const top = why.filter(w=>w[0]===level).slice(0,2).map(w=>w[1]);
-    const tail = level>=2 ? "dziś regeneracja, nie siła" : (swapped?"ścinamy do Zone 2":"trzymaj lekko");
-    why_txt = top.join(", ")+" → "+tail;
-  }
-  return {dot,tag,session,swapped,planName,why:why_txt};
+  if(st==="POOR") score-=8; else if(st==="LOW"||st==="UNBALANCED") score-=4;
+  score=Math.round(clampv(score,0,100));
+  const zone = score>=67?"green" : score>=45?"yellow" : "red";
+  return {score,zone,factors:F,status:st,hasData:true};
 }
 
-// Ostatni zapisany ciezar dla cwiczenia (log.ex[id] = {kg, d}).
-function lastWeight(exId){ const h=log.ex&&log.ex[exId]; return (h&&h.kg!=null)?h:null; }
+// Decyzja dnia: laczy readiness + plan + histori w JEDEN focus.
+function dailyFocus(ph, wk, dow, rows){
+  const base=buildSession(ph, wk, dow);
+  const rd=readiness(rows);
+  const REST={kind:"rest",name:"Regeneracja aktywna",icon:"🧘",detail:"spacer · mobilność · rozciąganie · oddech",exercises:null};
+  const Z2={kind:"cardio",name:"Zone 2 — spokojnie",icon:"🚴",detail:"30–35 min · tętno 125–140 · oddech nosem",exercises:null};
+  let session=base;
+  if(rd.hasData){
+    if(rd.zone==="red"){ if(base.kind!=="rest") session=REST; }
+    else if(rd.zone==="yellow"){
+      if(base.kind==="strength") session=Z2;
+      else if(base.kind==="cardio") session={...base,detail:(base.detail?base.detail+" · ":"")+"dziś krócej"};
+    }
+  }
+  const swapped = session.name!==base.name;
+  let title, intensityL, intensityT;
+  if(session.kind==="rest"){ title="Regeneracja"; intensityL="Bardzo lekko"; intensityT="spacer, mobilność, oddech nosem — zero obciążenia"; }
+  else if(session.kind==="strength"){
+    if(rd.zone==="green"){ title="Siła — dociśnij"; intensityL="RPE 8"; intensityT="zostaw ~2 powt. w zapasie, ostatnia seria mocna"; }
+    else { title="Siła — technika"; intensityL="RPE 7"; intensityT="pełen zakres ruchu, spokojne tempo"; }
+  } else {
+    const zoneTxt=(ph&&ph.cardio&&ph.cardio.zone)||"tętno 125–140 · oddech nosem";
+    title = swapped ? "Tlen zamiast siły" : (rd.zone==="yellow" ? "Zone 2 — krócej" : "Zone 2 — równo");
+    intensityL="Zone 2"; intensityT=zoneTxt;
+  }
+  let why;
+  if(!rd.hasData){ why="Brak danych regeneracji — trzymamy plan bazowy. Odśwież dane z Garmina."; }
+  else {
+    const sorted=[...rd.factors].sort((a,b)=>a.score-b.score);
+    if(rd.zone==="green"){
+      const top=sorted.slice(-2).reverse().map(f=>f.label.toLowerCase()+" "+f.note);
+      why="Masz zapas — "+top.join(", ")+". Dziś możesz zainwestować.";
+    } else {
+      const low=sorted.slice(0,2).map(f=>f.label.toLowerCase()+" "+f.note);
+      const tail=rd.zone==="red"?"dziś regeneracja, nie obciążaj":"zejdź z intensywności";
+      why=low.join(", ")+" → "+tail+".";
+    }
+  }
+  return {ready:rd, session, base, swapped, planName:base.name, title, why, intensityL, intensityT};
+}
+
+// Pierscien readiness (SVG).
+function ring(score, zone){
+  const col={green:"#10b981",yellow:"#fbbf24",red:"#ef4444"}[zone]||"#6a6a6a";
+  const rr=34, c=2*Math.PI*rr, off=c*(1-(score||0)/100);
+  return `<svg viewBox="0 0 80 80" style="width:82px;height:82px">
+    <circle cx="40" cy="40" r="${rr}" fill="none" stroke="#232323" stroke-width="7"/>
+    <circle cx="40" cy="40" r="${rr}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 40 40)"/>
+    <text x="40" y="41" text-anchor="middle" dominant-baseline="central" fill="${col}"
+      font-size="24" font-weight="700" font-family="ui-monospace,monospace">${score!=null?score:"–"}</text>
+  </svg>`;
+}
+function zoneClass(z){ return {green:"z-green",yellow:"z-yellow",red:"z-red"}[z]||"z-none"; }
+function zoneLabel(z){ return {green:"Gotowy",yellow:"Lekko",red:"Regeneracja"}[z]||"Brak danych"; }
+function factColor(s){ return s>=67?"#10b981":s>=45?"#fbbf24":"#ef4444"; }
+
+// ===== Progresja siły: historia per cwiczenie + inteligentna sugestia obciazenia =====
+function fmt(x){ return (Math.round(x*10)/10).toString().replace(".",","); }
+function exHist(id){ return (log.exHist&&log.exHist[id])||[]; }
+// jednorazowa migracja starego log.ex {kg,d} -> log.exHist [{kg,d}]
+function migrateStrength(){
+  if(log.exHist) return;
+  log.exHist={};
+  if(log.ex) for(const id in log.ex){ const e=log.ex[id]; if(e&&e.kg!=null) log.exHist[id]=[{kg:e.kg,d:e.d||""}]; }
+  save("fit-log-v1",log);
+}
+function pushWeight(id,kg,tk){
+  if(!log.exHist) log.exHist={};
+  const h=log.exHist[id]||(log.exHist[id]=[]);
+  const last=h[h.length-1];
+  if(last&&last.d===tk) last.kg=kg;          // ten sam dzien -> nadpisz
+  else h.push({kg,d:tk});
+  if(h.length>12) h.splice(0,h.length-12);    // trzymamy ostatnie 12 wpisow
+  save("fit-log-v1",log);
+}
+// zawias biodrowy / duze partie -> wieksze skoki, gora ciala -> mniejsze
+function isLower(id){ return /squat|rdl|deadlift|lunge|hip|leg|farmer|przysiad|martwy|wykrok/i.test(id); }
+function nextTarget(id){
+  const h=exHist(id); if(!h.length) return null;
+  const last=h[h.length-1].kg, prev=h.length>=2?h[h.length-2].kg:null;
+  const inc=isLower(id)?5:2.5;
+  if(prev!=null && Math.abs(last-prev)<0.01) return {txt:"➜ spróbuj "+fmt(last+inc)+" kg"};   // 2 sesje ten sam ciezar -> dolóż
+  if(prev!=null && last>prev) return {txt:"utrzymaj "+fmt(last)+" kg"};                          // swiezy wzrost -> ugruntuj
+  return null;
+}
 function exRow(ex, tk){
-  const lw=lastWeight(ex.id);
-  const phv=lw?String(lw.kg):"";
-  const lastTxt=lw?`ost. ${lw.kg} kg${lw.d&&lw.d!==tk?" · "+lw.d.slice(5):""}`:(ex.note||"");
-  return `<div class="ex"><div><div class="exn">${ex.name}</div>
-      <div class="exs">${ex.scheme}${(ex.note&&lw)?" · "+ex.note:""}</div></div>
-    <div class="exw"><input type="text" inputmode="decimal" data-ex="${ex.id}" placeholder="${phv||"kg"}" />
-      <div class="last">${lastTxt}</div></div></div>`;
+  const h=exHist(ex.id), last=h.length?h[h.length-1]:null;
+  const phv=last?fmt(last.kg):"";
+  const nt=nextTarget(ex.id);
+  const histTxt = h.length
+    ? h.slice(-3).map(e=>fmt(e.kg)).join(" → ")+" kg"+(nt?` · <span class="chip">${nt.txt}</span>`:"")
+    : "";
+  return `<div class="ex">
+    <div style="flex:1;min-width:0">
+      <div class="exn">${ex.name}</div>
+      <div class="exs">${ex.scheme}${ex.note?" · "+ex.note:""}</div>
+      ${histTxt?`<div class="exhist">${histTxt}</div>`:""}
+    </div>
+    <div class="exw">
+      <input type="text" inputmode="decimal" data-ex="${ex.id}" placeholder="${phv||"kg"}" />
+      <div class="last">${last?"ost. "+fmt(last.kg)+" kg":"zapisz ciężar"}</div>
+    </div></div>`;
 }
 
 let log = load('fit-log-v1', {days:{},weights:{},ex:{}});
 if(!log.ex) log.ex={};
+migrateStrength();
 let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
 try{ localStorage.removeItem('garmin-v1'); localStorage.removeItem('data-pass'); }catch(e){}  // wyczysc stare cache danych i haslo ze starej wersji
 
@@ -258,6 +366,7 @@ function garminCard(){
   const rhrTrend = (rhr7!=null&&rhrPrev!=null)? rhr7-rhrPrev : null;
   const lastOf=(k)=>{for(let i=rows.length-1;i>=0;i--){const v=rows[i][k]; if(v!=null&&v!==""&&!isNaN(v))return +v;}return null;};
   const spo2=lastOf("spo2"), spo2min=lastOf("spo2_min"), tnoc=lastOf("temp_noc");
+  const bb=lastOf("bb_max"), stres=lastOf("stres");
   const arr=(v,goodUp)=> v==null?"":(Math.abs(v)<0.3?"":`<span class="arrow ${ (v>0)===goodUp ?"up":"down"}">${v>0?"▲":"▼"}${Math.abs(v).toFixed(1)}</span>`);
   const statusPL={BALANCED:"zrównoważone",UNBALANCED:"niezrównoważone",LOW:"niskie",POOR:"słabe"}[status]||status||"—";
   return `<div class="card">
@@ -267,12 +376,41 @@ function garminCard(){
       <div class="m"><div class="mv mono">${r1(rhr7)}<span style="font-size:13px;color:var(--mut)"> bpm</span>${arr(rhrTrend,false)}</div><div class="ml">Tętno spoczynkowe</div></div>
       <div class="m"><div class="mv mono">${r1(sen7)}<span style="font-size:13px;color:var(--mut)"> h</span></div><div class="ml">Sen (śr. 7 dni)${senStd!=null?` · ±${r1(senStd)}h`:""}</div></div>
       <div class="m"><div class="mv mono">${steps7!=null?Math.round(steps7).toLocaleString("pl-PL"):"—"}</div><div class="ml">Kroki (śr. 7 dni)</div></div>
+      ${bb!=null?`<div class="m"><div class="mv mono">${Math.round(bb)}</div><div class="ml">Body Battery (szczyt)</div></div>`:""}
+      ${stres!=null?`<div class="m"><div class="mv mono">${Math.round(stres)}</div><div class="ml">Stres (śr. dzień)</div></div>`:""}
       ${spo2!=null?`<div class="m"><div class="mv mono">${r1(spo2)}<span style="font-size:13px;color:var(--mut)">%</span></div><div class="ml">SpO₂ we śnie${spo2min!=null?` · min ${r1(spo2min)}`:""}</div></div>`:""}
       ${tnoc!=null?`<div class="m"><div class="mv mono">${r1(tnoc)}<span style="font-size:13px;color:var(--mut)">°C</span></div><div class="ml">Temp. w nocy</div></div>`:""}
     </div>
     <div style="margin-top:14px"><p class="label" style="margin-bottom:6px">HRV — 30 dni</p>${spark(nz(hrv).slice(-30),"#10b981")}</div>
     <div class="sub">Status HRV: <b style="color:var(--tx)">${statusPL}</b></div>
     <div class="stamp">${gar.source==="auto"?"Auto-aktualizacja":"Import"}: ${gar.importedAt? new Date(gar.importedAt).toLocaleString("pl-PL"):"—"} · ${rows.length} dni</div>
+  </div>`;
+}
+
+function kondycjaCard(){
+  if(!gar||!gar.rows||!gar.rows.length) return "";
+  const rows=gar.rows;
+  const lastOf=(k)=>{for(let i=rows.length-1;i>=0;i--){const v=rows[i][k]; if(v!=null&&v!==""&&!isNaN(v))return +v;}return null;};
+  const vo2vals=rows.map(r=>r.vo2max).filter(x=>x!=null&&!isNaN(x));
+  const vo2=vo2vals.length?vo2vals[vo2vals.length-1]:null;
+  const vo2prev=vo2vals.length>8?vo2vals[Math.max(0,vo2vals.length-31)]:null;
+  const vo2tr=(vo2!=null&&vo2prev!=null)?vo2-vo2prev:null;
+  const load=lastOf("training_load"), endur=lastOf("endurance");
+  let minInt=null, any=false; rows.slice(-7).forEach(r=>{ if(r.min_intensywne!=null&&!isNaN(r.min_intensywne)){ minInt=(minInt||0)+r.min_intensywne; any=true; } });
+  if(!any) minInt=null;
+  let tstatus=""; for(let i=rows.length-1;i>=0;i--){ if(rows[i].training_status){ tstatus=rows[i].training_status; break; } }
+  if(vo2==null&&load==null&&endur==null&&minInt==null) return "";
+  const arr=(v,up)=> (v==null||Math.abs(v)<0.3)?"":`<span class="arrow ${(v>0)===up?"up":"down"}">${v>0?"▲":"▼"}${Math.abs(v).toFixed(1)}</span>`;
+  return `<div class="card">
+    <p class="label">Kondycja (silnik tlenowy)</p>
+    <div class="metrics">
+      ${vo2!=null?`<div class="m"><div class="mv mono">${r1(vo2)}${arr(vo2tr,true)}</div><div class="ml">VO₂max</div></div>`:""}
+      ${minInt!=null?`<div class="m"><div class="mv mono">${Math.round(minInt)}<span style="font-size:13px;color:var(--mut)"> min</span></div><div class="ml">Minuty intensywne (7 dni)</div></div>`:""}
+      ${load!=null?`<div class="m"><div class="mv mono">${Math.round(load)}</div><div class="ml">Obciążenie treningowe</div></div>`:""}
+      ${endur!=null?`<div class="m"><div class="mv mono">${Math.round(endur)}</div><div class="ml">Endurance score</div></div>`:""}
+    </div>
+    ${vo2vals.length>2?`<div style="margin-top:14px"><p class="label" style="margin-bottom:6px">VO₂max — trend</p>${spark(vo2vals.slice(-30),"#6366f1")}</div>`:""}
+    ${tstatus?`<div class="sub">Status treningu: <b style="color:var(--tx)">${tstatus}</b></div>`:""}
   </div>`;
 }
 
@@ -307,10 +445,13 @@ function render(){
   const toGoal=Math.round((cur-GOAL)*10)/10;
   const mon=monday(t), wd=[...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
   const trained=wd.slice(0,6).filter(d=>(log.days[key(d)]||{}).trained).length;
-  const dec = decide(baseSession, rows);
-  const isStrength = dec.session.kind==="strength" && dec.session.exercises && dec.session.exercises.length;
-  const doneTxt = dec.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
-                                            : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
+  const f = dailyFocus(ph, wk, t.getDay(), rows);
+  const isStrength = f.session.kind==="strength" && f.session.exercises && f.session.exercises.length;
+  const doneTxt = f.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
+                                          : (te.trained?"✓ Trening zrobiony":"Oznacz trening jako zrobiony");
+  const factsHtml = f.ready.hasData
+    ? `<div class="facts">${f.ready.factors.map(x=>`<span class="fact"><span class="fdot" style="background:${factColor(x.score)}"></span>${x.label} <b>${x.note}</b></span>`).join("")}</div>`
+    : "";
 
   document.getElementById("app").innerHTML = `
     <p class="eyebrow">Protokół metaboliczny</p>
@@ -325,15 +466,23 @@ function render(){
 
     <div class="card">
       <div class="between"><p class="label">Dziś · ${WL[(t.getDay()+6)%7]}</p>
-        <span style="font-size:13px">${dec.dot} <b style="color:var(--tx)">${dec.tag}</b></span></div>
+        <span class="zonepill ${zoneClass(f.ready.zone)}">${zoneLabel(f.ready.zone)}</span></div>
       <div class="wk">${ph.subtitle} · Tydzień ${wk}${ph.weeks?" / "+ph.weeks:""}</div>
-      <div class="row"><div class="ic">${dec.session.icon}</div><div style="flex:1">
-        <div class="plan-name">${dec.session.name}</div>
-        <div class="plan-det">${dec.session.detail||""}</div>
-        ${dec.swapped?`<div class="plan-det" style="color:var(--mut2)">plan na dziś: ${dec.planName}</div>`:""}
+      <div class="hero">
+        <div class="ringwrap">${ring(f.ready.score, f.ready.zone)}</div>
+        <div class="htxt">
+          <div class="focus-t">${f.session.icon} ${f.title}</div>
+          <div class="focus-w">${f.why}</div>
+        </div>
+      </div>
+      <div class="intens"><span class="il">${f.intensityL}</span><span>${f.intensityT}</span></div>
+      ${factsHtml}
+      <div class="row" style="margin-top:14px"><div style="flex:1">
+        <div class="plan-name">${f.session.name}</div>
+        <div class="plan-det">${f.session.detail||""}</div>
+        ${f.swapped?`<div class="plan-det" style="color:var(--mut2)">plan na dziś: ${f.planName}</div>`:""}
       </div></div>
-      ${isStrength?`<div style="margin-top:8px">${dec.session.exercises.map(ex=>exRow(ex,tk)).join("")}</div>`:""}
-      <div class="sub" style="margin-top:10px">${dec.why}</div>
+      ${isStrength?`<div style="margin-top:6px">${f.session.exercises.map(ex=>exRow(ex,tk)).join("")}</div>`:""}
       <button class="act ${te.trained?"done":""}" data-x="trained">${doneTxt}</button>
       <button class="act sleep ${te.sleptEarly?"on":""}" data-x="sleptEarly">${te.sleptEarly?"😴 W łóżku przed 22:00":"W łóżku przed 22:00?"}</button>
     </div>
@@ -355,6 +504,8 @@ function render(){
     </div>
 
     ${garminCard()}
+
+    ${kondycjaCard()}
 
     ${gar?`<button class="refresh" id="refreshBtn">🔄 Odśwież dane z Garmina</button>`:""}
 
@@ -382,7 +533,7 @@ function render(){
     inp.onkeydown=(e)=>{ if(e.key==="Enter") inp.blur(); };
     inp.onchange=()=>{ const id=inp.getAttribute("data-ex");
       const v=parseFloat((inp.value||"").replace(",",".")); if(!v||v<=0||v>500) return;
-      if(!log.ex)log.ex={}; log.ex[id]={kg:Math.round(v*10)/10,d:tk}; save("fit-log-v1",log); render(); };
+      pushWeight(id, Math.round(v*10)/10, tk); render(); };
   });
   const rb=document.getElementById("refreshBtn");
   if(rb){ rb.onclick=refreshFromGarmin; if(refreshing) setRefreshLabel("Aktualizuję… (do ~3 min)", true); }
