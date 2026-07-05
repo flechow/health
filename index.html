@@ -644,6 +644,15 @@ function priorities(rows){
     C.push({key:"vo2max",icon:"🫁",title:"Rusz VO₂max",note:"Trend płaski — trzymaj Zone 2 i raz w tygodniu krótki akcent tempowy.",weight:5});
   C.push({key:"strength",icon:"💪",title:"Nie odpuszczaj siły",note:"2 sesje w tygodniu chronią mięśnie w redukcji. Progresuj powoli.",weight:4});
   C.push({key:"weight",icon:"⚖️",title:"Trzymaj stabilne tempo",note:"0,5–1% masy na tydzień. Patrz na trend, nie na pojedynczy dzień.",weight:3});
+  const _tg=fuelTargets();
+  if(_tg){
+    const prot7=mean(rows.map(r=>r.bialko).filter(x=>x!=null&&!isNaN(x)).slice(-7));
+    if(prot7!=null && prot7 < _tg.proteinG*0.85)
+      C.push({key:"protein",icon:"🥩",title:"Dobij białko",note:`Śr. 7 dni ${Math.round(prot7)} g < cel ${_tg.proteinG} g — białko chroni mięśnie w redukcji.`,weight:7});
+    const kcal3=rows.map(r=>r.kcal_spozyte).filter(x=>x!=null&&!isNaN(x)).slice(-3);
+    if(kcal3.length===3 && kcal3.every(v=>v<_tg.kcalFloor))
+      C.push({key:"deficit",icon:"⚠️",title:"Za duży deficyt",note:`3 dni poniżej ${_tg.kcalFloor} kcal — chronisz mięśnie, dodaj jedzenia.`,weight:8});
+  }
   C.sort((x,y)=>y.weight-x.weight);
   const seen=new Set(), out=[]; for(const c of C){ if(seen.has(c.key))continue; seen.add(c.key); out.push(c); if(out.length>=3)break; }
   return out;
@@ -771,6 +780,14 @@ function render(){
   const mon=monday(t), wd=[...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
   const trained=wd.slice(0,6).filter(d=>(log.days[key(d)]||{}).trained).length;
   const f = dailyFocus(ph, wk, t.getDay(), rows);
+  // paliwo: flaga bialka pod celem (nie zmienia wyniku gotowosci, tylko informuje)
+  const _ftg=fuelTargets();
+  if(_ftg && gar && gar.rows){
+    const _p7=mean(gar.rows.map(r=>r.bialko).filter(x=>x!=null&&!isNaN(x)).slice(-7));
+    if(_p7!=null && _p7 < _ftg.proteinG*0.9){
+      f.why = (f.why?f.why+" · ":"") + `paliwo: białko ${Math.round(_p7)}/${_ftg.proteinG} g`;
+    }
+  }
   const isStrength = f.session.kind==="strength" && f.session.exercises && f.session.exercises.length;
   const sessInfo = f.session.kind==="strength" ? "strength" : (f.session.kind==="rest" ? "rest" : "zone2");
   const doneTxt = f.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
