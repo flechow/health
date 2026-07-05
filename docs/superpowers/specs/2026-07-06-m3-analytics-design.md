@@ -4,6 +4,11 @@
 **Status:** Design draft, ready for implementation planning
 **Part of:** Protokół 116→90 roadmap (M3 of 4: Nutrition → Body composition → **Analytics** → Adherence)
 
+> **Resolved decision (2026-07-06):** Adding the optional **`reps` (+ `rpe`) field** to the
+> strength log is **APPROVED.** M3 therefore includes the small logging extension and computes
+> a true Epley e1RM + weekly tonnage for the strength-retention analytic (not the tonnage-only
+> fallback).
+
 ## Goal
 
 Squeeze more decision-grade insight out of data the system already collects — **no new daily

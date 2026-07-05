@@ -4,6 +4,11 @@
 **Status:** Draft design, ready for implementation planning
 **Part of:** Protokół 116→90 roadmap (M2 of 4: Nutrition → **Body composition** → Analytics → Adherence)
 
+> **Resolved decision (2026-07-06):** Progress photos are **OUT of scope for M2.** Waist +
+> weight + gym-load trends answer "muscular vs skinny-fat" without them. The IndexedDB photo
+> section below is retained only as a possible later add-on. M2 ships: waist (+ secondary
+> circumference sites), smart-scale auto-flow, cards, and trends.
+
 ## Goal
 
 The Protokół target is **muscular 90 kg**, not "90 kg". Scale weight (`waga`) alone cannot
