@@ -58,7 +58,7 @@
   .flex{display:flex; gap:8px; margin-top:14px;}
   .circ-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:12px}
   .circ-l{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:4px}
-  .circ-l input{width:64px}
+  .circ-l input{width:64px;padding:8px;}
   .metrics{display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; margin-top:14px;}
   .m .mv{font-size:24px; font-weight:600;}
   .m .ml{font-size:12px; color:var(--mut); margin-top:2px;}
@@ -412,7 +412,7 @@ function saveCirc(date, site, cm){
 }
 function circSeries(site){
   return Object.keys(bodyLog.circ||{}).sort()
-    .map(d=>({d, v:(bodyLog.circ[d]||{})[site]}))
+    .map(d=>({d, v:bodyLog.circ[d][site]}))
     .filter(x=>x.v!=null && !isNaN(x.v));
 }
 let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
@@ -552,7 +552,7 @@ function sylwetkaCard(){
     <p class="label">Sylwetka</p>
     <div class="metrics">
       <div class="m" data-info="talia">${waistLine}</div>
-      ${d4!=null?`<div class="m" data-info="sylwetka"><div class="mv mono">${d4<0?"−":"+"}${Math.abs(d4)}<span style="font-size:13px;color:var(--mut)"> cm</span></div><div class="ml">Talia − 4 tyg.${ic()}</div></div>`:""}
+      ${d4!=null&&waistS.length>=2?`<div class="m" data-info="sylwetka"><div class="mv mono">${d4<0?"−":"+"}${Math.abs(d4)}<span style="font-size:13px;color:var(--mut)"> cm</span></div><div class="ml">${waistS.length>=5?"Talia − 4 tyg.":"Talia — zmiana"}${ic()}</div></div>`:""}
       ${bf!=null?`<div class="m" data-info="bodyfat"><div class="mv mono">${r1(bf)}<span style="font-size:13px;color:var(--mut)"> %</span></div><div class="ml">Tłuszcz (waga)${ic()}</div></div>`:""}
       ${mus!=null?`<div class="m" data-info="bodyfat"><div class="mv mono">${r1(mus)}<span style="font-size:13px;color:var(--mut)"> kg</span></div><div class="ml">Mięśnie (waga)${ic()}</div></div>`:""}
     </div>
