@@ -31,7 +31,13 @@ def login(email, password):
     r = s.post(BASE + "/login", json={"_username": email, "_password": password}, timeout=30)
     r.raise_for_status()
     token = r.json().get("token")
-    uid = str(_parse_jwt(token).get("id"))
+    if not token:
+        raise ValueError("Fitatu login: brak tokenu w odpowiedzi")
+    jwt_payload = _parse_jwt(token)
+    uid = jwt_payload.get("id")
+    if uid is None:
+        raise ValueError("Fitatu login: brak id uzytkownika w tokenie")
+    uid = str(uid)
     s.headers.update({"Authorization": "Bearer " + token})
     return {"session": s, "uid": uid}
 

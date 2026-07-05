@@ -1,5 +1,8 @@
 import fitatu
 import pytest
+import json
+import base64
+from unittest.mock import Mock, patch
 
 RAW = {  # shape confirmed by Task 1 spike
     "dietPlan": {
@@ -35,3 +38,28 @@ def test_none_returns_all_null():
     out = fitatu.normalize_nutrition(None)
     assert out == {"bialko": None, "kcal_spozyte": None, "wegle": None,
                    "tluszcz": None, "blonnik": None, "fitatu": None}
+
+def test_login_raises_valueerror_when_token_missing():
+    """Raises ValueError when login response has no token."""
+    mock_response = Mock()
+    mock_response.json.return_value = {}  # No 'token' key
+    mock_response.raise_for_status.return_value = None
+
+    with patch('fitatu.requests.Session.post', return_value=mock_response):
+        with pytest.raises(ValueError, match="brak tokenu w odpowiedzi"):
+            fitatu.login("test@example.com", "password")
+
+def test_login_raises_valueerror_when_id_missing_in_jwt():
+    """Raises ValueError when JWT payload has no id claim."""
+    # Build a JWT token with no 'id' claim
+    payload = {"sub": "user"}
+    encoded_payload = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    fake_token = f"x.{encoded_payload}.y"
+
+    mock_response = Mock()
+    mock_response.json.return_value = {"token": fake_token}
+    mock_response.raise_for_status.return_value = None
+
+    with patch('fitatu.requests.Session.post', return_value=mock_response):
+        with pytest.raises(ValueError, match="brak id uzytkownika w tokenie"):
+            fitatu.login("test@example.com", "password")
