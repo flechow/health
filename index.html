@@ -706,6 +706,31 @@ function priorities(rows){
     if(kcal3.length===3 && kcal3.every(v=>v!=null&&!isNaN(v)&&v<_tg.kcalFloor))
       C.push({key:"deficit",icon:"⚠️",title:"Za duży deficyt",note:`3 dni poniżej ${_tg.kcalFloor} kcal — chronisz mięśnie, dodaj jedzenia.`,weight:8});
   }
+  const _bt=bodyTargets();
+  const _ws=circSeries("waist");
+  if(_ws.length){
+    // stale measurement: last waist entry older than 14 days
+    const lastD=_ws[_ws.length-1].d;
+    const ageDays=Math.round((Date.parse(new Date().toISOString().slice(0,10))-Date.parse(lastD))/86400000);
+    if(ageDays>=14)
+      C.push({key:"measure",icon:"📏",title:"Zmierz talię",note:`Ostatni pomiar ${ageDays} dni temu — cotygodniowy obwód talii to Twój licznik tłuszczu.`,weight:6});
+  } else {
+    C.push({key:"measure",icon:"📏",title:"Zacznij mierzyć talię",note:"Cotygodniowy obwód talii pokazuje, czy tłuszcz schodzi, gdy waga stoi.",weight:6});
+  }
+  if(_ws.length>=4){
+    // recomp confirmation: waist down over last ~4 entries while weight ~flat over ~28 days
+    const wNow=_ws[_ws.length-1].v, wRef=_ws[_ws.length-4].v;
+    const mw=(typeof mergedWeights==="function")?mergedWeights():[];
+    const kgNow=mw.length?mw[mw.length-1].v:null;
+    const kgRef=mw.length>=28?mw[mw.length-28].v:(mw.length?mw[0].v:null);
+    const waistDown=(wNow!=null&&wRef!=null&&wNow<wRef-0.4);
+    const weightFlat=(kgNow!=null&&kgRef!=null&&Math.abs(kgNow-kgRef)<=1.0);
+    if(waistDown&&weightFlat)
+      C.push({key:"recomp",icon:"✅",title:"Rekompozycja działa",note:"Talia spada przy ~stałej wadze — tłuszcz schodzi, mięśnie zostają. Tak trzymaj.",weight:3});
+    // waist plateau vs target
+    if(_bt&&_bt.waistCm&&!waistDown && wNow!=null && wNow>_bt.waistCm)
+      C.push({key:"waistplateau",icon:"📉",title:"Talia stoi",note:`Obwód talii nie spada i jest powyżej celu ${_bt.waistCm} cm — sprawdź deficyt i kroki.`,weight:5});
+  }
   C.sort((x,y)=>y.weight-x.weight);
   const seen=new Set(), out=[]; for(const c of C){ if(seen.has(c.key))continue; seen.add(c.key); out.push(c); if(out.length>=3)break; }
   return out;
