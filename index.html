@@ -466,6 +466,50 @@ function garminCard(){
   </div>`;
 }
 
+function fuelCard(){
+  if(!gar||!gar.rows||!gar.rows.length) return "";
+  const rows=gar.rows;
+  const tg=fuelTargets();
+  const prot=rows.map(r=>r.bialko), kcal=rows.map(r=>r.kcal_spozyte);
+  const protVals=nz(prot);
+  if(!protVals.length) return "";                 // brak danych z Fitatu — nie pokazuj karty
+  const last=rows[rows.length-1]||{};
+  const today=(new Date()).toISOString().slice(0,10);
+  const isToday = last.data===today;
+  const dayLabel = isToday ? "dziś (na bieżąco)" : "ostatni pełny dzień";
+  const protNow = last.bialko!=null&&!isNaN(last.bialko) ? last.bialko : null;
+  const kcalNow = last.kcal_spozyte!=null&&!isNaN(last.kcal_spozyte) ? last.kcal_spozyte : null;
+  const prot7 = mean(nz(prot).slice(-7));
+  const protTgt = tg?tg.proteinG:null, kcalTgt = tg?tg.kcalTarget:null;
+  const deficit = (kcalNow!=null&&kcalTgt!=null) ? kcalTgt-kcalNow : null;
+  const okStyle="color:#10b981", lowStyle="color:#ef4444";
+  const protHit = (protNow!=null&&protTgt!=null&&protNow>=protTgt*0.9);
+  return `<div class="card">
+    <p class="label">Paliwo (z Fitatu) · ${dayLabel}</p>
+    <div class="metrics">
+      <div class="m" data-info="bialko">
+        <div class="mv mono" style="${protHit?okStyle:lowStyle}">${protNow!=null?r1(protNow):"—"}<span style="font-size:13px;color:var(--mut)"> g</span></div>
+        <div class="ml">Białko${protTgt?` / cel ${protTgt} g`:""}${ic()}</div>
+      </div>
+      <div class="m" data-info="bialko">
+        <div class="mv mono">${r1(prot7)}<span style="font-size:13px;color:var(--mut)"> g</span></div>
+        <div class="ml">Białko (śr. 7 dni)${ic()}</div>
+      </div>
+      <div class="m" data-info="kcal">
+        <div class="mv mono">${kcalNow!=null?Math.round(kcalNow):"—"}<span style="font-size:13px;color:var(--mut)"> kcal</span></div>
+        <div class="ml">Energia${kcalTgt?` / cel ${kcalTgt}`:""}${ic()}</div>
+      </div>
+      <div class="m" data-info="kcal">
+        <div class="mv mono">${deficit!=null?(deficit>=0?"−":"+")+Math.abs(Math.round(deficit)):"—"}<span style="font-size:13px;color:var(--mut)"> kcal</span></div>
+        <div class="ml">Deficyt vs cel${ic()}</div>
+      </div>
+    </div>
+    <div style="margin-top:14px"><p class="label" style="margin-bottom:6px">Białko — 14 dni</p>
+      ${spark(nz(prot).slice(-14),"#f59e0b")}
+    </div>
+  </div>`;
+}
+
 function kondycjaCard(){
   if(!gar||!gar.rows||!gar.rows.length) return "";
   const rows=gar.rows;
@@ -512,6 +556,8 @@ const INFO = {
  focus:{t:"Focus dnia i RPE",h:`<p>Aplikacja bierze Twój plan na dziś i dostraja go do gotowości: przy słabym dniu siłownia zamienia się w spokojny tlen lub regenerację, przy dobrym — dostajesz zielone światło, by docisnąć.</p><p><b>RPE</b> to skala odczuwanego wysiłku 1–10. <span class="t">RPE 7</span> = zostają ~3 powtórzenia w zapasie (technika). <span class="t">RPE 8</span> = zostają ~2 (docisk).</p>`},
  strength:{t:"Siła i progresja",h:`<p>Progres to <b>stopniowe przeciążanie</b>: gdy ciężar staje się łatwy (dwie sesje z zapasem), dokładasz trochę. Aplikacja podpowiada +2,5 kg (góra ciała) lub +5 kg (dół).</p><p>Siła w redukcji chroni mięśnie — schodzisz z wagi, ale zostajesz silny i utrzymujesz metabolizm.</p>`},
  zone2:{t:"Zone 2 — baza tlenowa",h:`<p>Spokojny wysiłek, przy którym dasz radę mówić pełnymi zdaniami (tętno ~125–140, oddech nosem). Buduje mitochondria i zdolność spalania tłuszczu.</p><p>Nuda jest celem — to ma być łatwe. Objętość rośnie stopniowo z tygodniami.</p>`},
+ bialko:{t:"Białko — paliwo mięśni",h:`<p>W redukcji białko chroni mięśnie. Cel fazy: <b>ok. 2 g na kg wagi docelowej</b> (≈180 g przy 90 kg).</p><p>Liczy się <b>7-dniowa średnia</b>, nie pojedynczy dzień.</p><p class="t">Dane z Fitatu — zaloguj posiłki tam jak zwykle.</p>`},
+ kcal:{t:"Energia i deficyt",h:`<p>Umiarkowany deficyt (~300–600 kcal) sprzyja utracie tłuszczu przy zachowaniu mięśni.</p><p>Za duży deficyt = ryzyko utraty mięśni. Nie schodź poniżej <b>podłogi kalorycznej</b> z planu.</p>`},
  rest:{t:"Regeneracja aktywna",h:`<p>Dzień na odbudowę: spacer, mobilność, rozciąganie, oddech. Postęp dzieje się <b>między</b> treningami — bez regeneracji nie ma adaptacji.</p>`},
  phase:{t:"Fazy planu",h:`<p>Plan idzie etapami: najpierw baza tlenowa i wzorce ruchu, potem rozbudowa (akcenty tempowe, cięższa siła). Gdy faza dobiega końca, aplikacja proponuje przejście dalej — jednym dotknięciem.</p>`},
  priorities:{t:"Priorytety tygodnia",h:`<p>Na podstawie Twoich trendów aplikacja wybiera 1–3 rzeczy, które w tym tygodniu dadzą najwięcej — czy to sen, kroki, objętość, czy odpuszczenie. Skup się na nich, resztę po prostu trzymaj.</p>`},
@@ -790,6 +836,8 @@ function render(){
     </div>
 
     ${garminCard()}
+
+    ${fuelCard()}
 
     ${kondycjaCard()}
 
