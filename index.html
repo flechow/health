@@ -683,11 +683,11 @@ function exNameMap(){
 function weeklyAgg(rows){
   const byWeek={};
   rows.forEach(r=>{ if(!r.data) return; const d=new Date(r.data+"T00:00:00"); if(isNaN(d)) return;
-    const k=key(monday(d)); (byWeek[k]=byWeek[k]||{minutes:0,trained:0}).minutes += (r.min_intensywne!=null&&!isNaN(r.min_intensywne))?r.min_intensywne:0; });
+    const k=key(monday(d)); const b=(byWeek[k]=byWeek[k]||{minutes:0,trained:0,protSum:0,protN:0}); b.minutes+=(r.min_intensywne!=null&&!isNaN(r.min_intensywne))?r.min_intensywne:0; if(r.bialko!=null&&!isNaN(r.bialko)){ b.protSum+=r.bialko; b.protN++; } });
   Object.keys(log.days||{}).forEach(dk=>{ if((log.days[dk]||{}).trained){ const d=new Date(dk+"T00:00:00"); if(isNaN(d)) return;
     const k=key(monday(d)); (byWeek[k]=byWeek[k]||{minutes:0,trained:0}).trained += 1; } });
   return Object.keys(byWeek).sort().slice(-8).map(k=>{ const dd=new Date(k+"T00:00:00");
-    return {short:(dd.getMonth()+1)+"/"+dd.getDate(), minutes:Math.round(byWeek[k].minutes||0), trained:byWeek[k].trained||0}; });
+    return {short:(dd.getMonth()+1)+"/"+dd.getDate(), minutes:Math.round(byWeek[k].minutes||0), trained:byWeek[k].trained||0, protein:byWeek[k].protN?Math.round(byWeek[k].protSum/byWeek[k].protN):0}; });
 }
 function bars(items, color){
   if(!items.length) return '<div class="sub">Za mało danych.</div>';
@@ -718,12 +718,16 @@ function progressView(rows){
       ${trend("HRV nocne",nzslice("hrv",60),"ms",true,"hrv","#10b981")}
       ${trend("VO₂max",nzslice("vo2max",90),"",true,"vo2max","#6366f1")}
       ${trend("Kroki (dz.)",nzslice("kroki",30),"",true,"steps","#f59e0b")}
+      ${trend("Białko",nzslice("bialko",60),"g",true,"bialko","#f59e0b")}
+      ${trend("Energia",nzslice("kcal_spozyte",60),"kcal",false,"kcal","#ef4444")}
     </div>
     <div class="card">
       <p class="label">Objętość tygodniowa${ib('minint')}</p>
       <div class="sub" style="margin-bottom:2px">Minuty intensywne / tydzień (ostatnie ${wk.length})</div>
       ${bars(wk.map(w=>({label:w.short,v:w.minutes})),"#6366f1")}
       <div class="sub" style="margin-top:12px">Treningi odhaczone: <b style="color:var(--tx)">${totalTrained}</b> w ${wk.length} tyg.</div>
+      <p class="label" style="margin:14px 0 6px">Białko — średnia tygodniowa (g/dzień)</p>
+      ${bars(wk.filter(w=>w.protein>0).map(w=>({label:w.short,v:w.protein})),"#f59e0b")}
     </div>
     ${exIds.length?`<div class="card">
       <p class="label">Siła — progresja${ib('strength')}</p>
