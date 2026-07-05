@@ -187,6 +187,7 @@ const DEFAULT_PLAN={
     focus:"Silnik tlenowy + wzorce ruchowe.",
     cardio:{baseMin:35,stepMin:5,everyWeeks:2,capMin:50,zone:"tętno 125–140 · oddech nosem"},
     nutrition:{proteinG:180,kcalTarget:2200,kcalFloor:1850},
+    body:{waistCm:100,bodyFatPct:15},
     days:{
      "1":{type:"cardio",name:"Zone 2 — orbitrek",icon:"🚴",detail:"spokojne, równe tempo"},
      "2":{type:"strength",name:"Siła A — full body",icon:"💪",detail:"tempo spokojne, pełen zakres ruchu",exercises:[
@@ -221,6 +222,12 @@ function fuelTargets(){
   const n=ph&&ph.nutrition;
   if(!n) return null;
   return {proteinG:n.proteinG, kcalTarget:n.kcalTarget, kcalFloor:n.kcalFloor};
+}
+function bodyTargets(){
+  const ph=activePhase();
+  const b=ph&&ph.body;
+  if(!b) return null;
+  return {waistCm:b.waistCm, bodyFatPct:b.bodyFatPct};
 }
 function phaseStart(ph){
   const ov=planOverride();
@@ -394,6 +401,17 @@ function exRow(ex, tk){
 let log = load('fit-log-v1', {days:{},weights:{},ex:{}});
 if(!log.ex) log.ex={};
 migrateStrength();
+const bodyLog=load("bodycomp-v1",{circ:{}});
+function saveCirc(date, site, cm){
+  const day=(bodyLog.circ[date]=bodyLog.circ[date]||{});
+  day[site]=Math.round(cm*10)/10;
+  save("bodycomp-v1", bodyLog);
+}
+function circSeries(site){
+  return Object.keys(bodyLog.circ||{}).sort()
+    .map(d=>({d, v:(bodyLog.circ[d]||{})[site]}))
+    .filter(x=>x.v!=null && !isNaN(x.v));
+}
 let gar = null;   // dane odszyfrowane trzymamy TYLKO w pamieci sesji (nie w localStorage)
 try{ localStorage.removeItem('garmin-v1'); localStorage.removeItem('data-pass'); }catch(e){}  // wyczysc stare cache danych i haslo ze starej wersji
 

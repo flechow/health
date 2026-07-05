@@ -12,6 +12,7 @@
       "focus": "Zbudować silnik tlenowy i wzorce ruchowe. Objętość Zone 2 rośnie stopniowo; na siłowni najpierw technika, potem dokładamy ciężar.",
       "cardio": { "baseMin": 35, "stepMin": 5, "everyWeeks": 2, "capMin": 50, "zone": "tętno 125–140 · oddech nosem" },
       "nutrition": { "proteinG": 180, "kcalTarget": 2200, "kcalFloor": 1850 },
+      "body": { "waistCm": 100, "bodyFatPct": 15 },
       "days": {
         "1": { "type": "cardio", "name": "Zone 2 — orbitrek", "icon": "🚴", "detail": "spokojne, równe tempo" },
         "2": { "type": "strength", "name": "Siła A — full body", "icon": "💪", "detail": "tempo spokojne, pełen zakres ruchu",
@@ -45,6 +46,7 @@
       "focus": "SZKIC — do wspólnego dopracowania. Utrzymujemy Zone 2, dokładamy 1× w tygodniu tempo/próg oraz progresję siły (więcej serii/ciężaru). Ustaw startDate i activePhase=2, gdy zaczniesz.",
       "cardio": { "baseMin": 40, "stepMin": 5, "everyWeeks": 3, "capMin": 55, "zone": "tętno 125–140 · oddech nosem" },
       "nutrition": { "proteinG": 180, "kcalTarget": 2200, "kcalFloor": 1850 },
+      "body": { "waistCm": 94, "bodyFatPct": 15 },
       "days": {
         "1": { "type": "cardio", "name": "Zone 2 — orbitrek", "icon": "🚴", "detail": "spokojne tempo" },
         "2": { "type": "strength", "name": "Siła A — dół + push", "icon": "💪", "detail": "docisk vs Faza 1",
