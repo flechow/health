@@ -112,12 +112,20 @@ git commit -m "chore: ignore Fitatu feasibility spike artifacts"
 - Create: `tests/__init__.py` (empty)
 - Create: `tests/test_fitatu.py`
 
+**Endpoints (CONFIRMED by Task 1 spike — use verbatim):**
+- BASE: `https://pl-pl.fitatu.com/api`
+- Required headers on every request: `api-key: FITATU-MOBILE-APP`, `api-secret: PYRXtfs88UDJMuCCrNpLV`
+- Login: `POST {BASE}/login` with JSON `{"_username": email, "_password": password}` → `{"token","refresh_token"}`
+- User id: base64url-decode the JWT `token`'s payload (middle segment), read `claims["id"]` (a string)
+- Daily data: `GET {BASE}/diet-and-activity-plan/{uid}/day/{YYYY-MM-DD}` with `Authorization: Bearer {token}`
+- Response shape: `raw["dietPlan"]` is a dict of meals (`breakfast`, `second_breakfast`, `lunch`, `dinner`, `snack`, `supper`); each meal has `items: [...]`; each item has numeric `energy`, `protein`, `carbohydrate`, `fat`, `fiber`. **There is no precomputed daily total — sum across all meals' items.** Ignore the per-item `eaten` flag (count all logged items).
+
 **Interfaces:**
 - Produces:
-  - `login(email: str, password: str) -> requests.Session` — authenticated session (auth token applied to headers).
-  - `fetch_nutrition(session: requests.Session, day: str) -> dict | None` — raw daily summary for `"YYYY-MM-DD"`, or `None` if unavailable.
-  - `normalize_nutrition(raw: dict | None) -> dict` — pure mapping to `{"bialko","kcal_spozyte","wegle","tluszcz","blonnik","fitatu"}`, values `float|None`.
-  - `fetch_normalized(session, day) -> dict` — convenience: `normalize_nutrition(fetch_nutrition(session, day))`.
+  - `login(email: str, password: str) -> dict` — returns a client `{"session": requests.Session, "uid": str}` with the Bearer token already applied to the session headers.
+  - `fetch_nutrition(client: dict, day: str) -> dict | None` — raw day JSON for `"YYYY-MM-DD"`, or `None` on any error.
+  - `normalize_nutrition(raw: dict | None) -> dict` — pure. Sums all meal items into `{"bialko","kcal_spozyte","wegle","tluszcz","blonnik"}` (float, rounded 1 dp; `None` when the day has no items) plus `"fitatu"` holding the full raw response verbatim (`None` when raw is `None`).
+  - `fetch_normalized(client, day) -> dict` — convenience: `normalize_nutrition(fetch_nutrition(client, day))`.
 
 - [ ] **Step 1: Create the dev-deps file**
 
@@ -129,28 +137,42 @@ Run: `pip install -r requirements-dev.txt`
 
 - [ ] **Step 2: Write the failing test for `normalize_nutrition`**
 
-Create `tests/__init__.py` (empty) and `tests/test_fitatu.py`. Use a fixture shaped like the spike's `fitatu_sample.json` (adjust key paths in `RAW` to match what Task 1 recorded):
+Create `tests/__init__.py` (empty) and `tests/test_fitatu.py`. The `RAW` fixture mirrors the real Fitatu day shape confirmed by the Task 1 spike (per-item macros nested under `dietPlan` meals; note one item has `eaten:false` and must still be counted):
 ```python
 import fitatu
+import pytest
 
-RAW = {  # shape confirmed by Task 1 spike (fitatu_sample.json)
-    "summary": {"energy": 2080, "protein": 172.4, "carbohydrate": 190.1, "fat": 68.0, "fiber": 28.2},
-    "someExtra": {"sodium": 3200},
+RAW = {  # shape confirmed by Task 1 spike
+    "dietPlan": {
+        "breakfast": {"items": [
+            {"name": "Owsianka", "energy": 300, "protein": 10, "carbohydrate": 50, "fat": 6, "fiber": 8, "eaten": True}]},
+        "second_breakfast": {"items": [
+            {"name": "Winogrona", "energy": 50, "protein": 0.5, "carbohydrate": 12, "fat": 0.2, "fiber": 1, "eaten": False}]},
+        "dinner": {"items": []},
+    },
+    "water": {"waterConsumption": 3500},
 }
 
-def test_normalize_maps_core_macros():
+def test_sums_all_items_ignoring_eaten_flag():
     out = fitatu.normalize_nutrition(RAW)
-    assert out["bialko"] == 172.4
-    assert out["kcal_spozyte"] == 2080
-    assert out["wegle"] == 190.1
-    assert out["tluszcz"] == 68.0
-    assert out["blonnik"] == 28.2
+    assert out["bialko"] == pytest.approx(10.5, abs=0.05)      # 10 + 0.5, eaten:false still counted
+    assert out["kcal_spozyte"] == pytest.approx(350, abs=0.05)
+    assert out["wegle"] == pytest.approx(62, abs=0.05)
+    assert out["tluszcz"] == pytest.approx(6.2, abs=0.05)
+    assert out["blonnik"] == pytest.approx(9, abs=0.05)
 
-def test_normalize_keeps_raw_in_fitatu_key():
+def test_stores_full_raw_verbatim():
     out = fitatu.normalize_nutrition(RAW)
     assert out["fitatu"] == RAW
 
-def test_normalize_none_returns_all_null():
+def test_empty_day_returns_null_core():
+    raw = {"dietPlan": {"breakfast": {"items": []}, "dinner": {"items": []}}}
+    out = fitatu.normalize_nutrition(raw)
+    assert out["bialko"] is None
+    assert out["kcal_spozyte"] is None
+    assert out["fitatu"] == raw
+
+def test_none_returns_all_null():
     out = fitatu.normalize_nutrition(None)
     assert out == {"bialko": None, "kcal_spozyte": None, "wegle": None,
                    "tluszcz": None, "blonnik": None, "fitatu": None}
@@ -163,42 +185,50 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'fitatu'`.
 
 - [ ] **Step 4: Implement `fitatu.py`**
 
-Fill `LOGIN_URL`, `DIARY_URL`, the login payload, the auth-header scheme, and `KEY_MAP` paths from the Task 1 spike. `normalize_nutrition` reads via `KEY_MAP` so the one shape-dependency is isolated here:
+All URLs, headers, login body, JWT-id extraction, and response shape below are CONFIRMED by the Task 1 spike — use verbatim. `normalize_nutrition` sums every item across all meals (the `eaten` flag is ignored):
 ```python
 # -*- coding: utf-8 -*-
 """Nieoficjalny pobieracz odzywiania z Fitatu (analogicznie do garminconnect).
-Loguje sie, pobiera dzienne podsumowanie makro i normalizuje do pol wiersza."""
-import requests
+Loguje sie, pobiera dzienny plan/diete i sumuje makro do pol wiersza.
+Endpointy z nieoficjalnego fitatu-sdk (Capure/fitatu-sdk), potwierdzone spikem."""
+import json, base64, requests
 
-LOGIN_URL = "https://pl.fitatu.com/api/login"          # potwierdzone w spike (Task 1)
-DIARY_URL = "https://pl.fitatu.com/api/diet-diary/{day}"  # potwierdzone w spike (Task 1)
-
-# Sciezki do wartosci w surowej odpowiedzi Fitatu (ustalone w Task 1 ze spike'u).
-# Kazdy wpis to lista kluczy do zejscia w zagniezdzonym dict.
-KEY_MAP = {
-    "bialko":       ["summary", "protein"],
-    "kcal_spozyte": ["summary", "energy"],
-    "wegle":        ["summary", "carbohydrate"],
-    "tluszcz":      ["summary", "fat"],
-    "blonnik":      ["summary", "fiber"],
+BASE = "https://pl-pl.fitatu.com/api"
+_HEADERS = {
+    "api-key": "FITATU-MOBILE-APP",
+    "api-secret": "PYRXtfs88UDJMuCCrNpLV",
+    "User-Agent": "protokol-health/1.0",
+    "Accept": "application/json",
 }
+
+# Docelowe pole wiersza -> nazwa pola w pozycji posilku Fitatu.
+_SUM = {"bialko": "protein", "kcal_spozyte": "energy", "wegle": "carbohydrate",
+        "tluszcz": "fat", "blonnik": "fiber"}
+_KEYS = ("bialko", "kcal_spozyte", "wegle", "tluszcz", "blonnik", "fitatu")
+
+
+def _parse_jwt(token):
+    """Dekoduje payload JWT (bez weryfikacji podpisu) — tylko po to, by odczytac id."""
+    payload = token.split(".")[1]
+    payload += "=" * (-len(payload) % 4)
+    return json.loads(base64.urlsafe_b64decode(payload).decode("utf-8"))
 
 
 def login(email, password):
     s = requests.Session()
-    s.headers.update({"User-Agent": "protokol-health/1.0", "Accept": "application/json"})
-    r = s.post(LOGIN_URL, json={"login": email, "password": password}, timeout=30)
+    s.headers.update(_HEADERS)
+    r = s.post(BASE + "/login", json={"_username": email, "_password": password}, timeout=30)
     r.raise_for_status()
-    tok = r.json()
-    token = tok.get("token") or tok.get("access_token")
-    if token:
-        s.headers.update({"Authorization": "Bearer " + token})
-    return s
+    token = r.json().get("token")
+    uid = str(_parse_jwt(token).get("id"))
+    s.headers.update({"Authorization": "Bearer " + token})
+    return {"session": s, "uid": uid}
 
 
-def fetch_nutrition(session, day):
+def fetch_nutrition(client, day):
     try:
-        r = session.get(DIARY_URL.format(day=day), timeout=30)
+        url = f"{BASE}/diet-and-activity-plan/{client['uid']}/day/{day}"
+        r = client["session"].get(url, timeout=30)
         r.raise_for_status()
         return r.json()
     except Exception as e:
@@ -206,25 +236,35 @@ def fetch_nutrition(session, day):
         return None
 
 
-def _dig(d, path):
-    cur = d
-    for k in path:
-        if not isinstance(cur, dict):
-            return None
-        cur = cur.get(k)
-    return cur if isinstance(cur, (int, float)) else None
-
-
 def normalize_nutrition(raw):
     if not isinstance(raw, dict):
-        return {k: None for k in ("bialko", "kcal_spozyte", "wegle", "tluszcz", "blonnik", "fitatu")}
-    out = {dst: _dig(raw, path) for dst, path in KEY_MAP.items()}
+        return {k: None for k in _KEYS}
+    out = {k: None for k in _KEYS}
     out["fitatu"] = raw
+    diet = raw.get("dietPlan")
+    if not isinstance(diet, dict):
+        return out
+    totals = {dst: 0.0 for dst in _SUM}
+    any_item = False
+    for meal in diet.values():
+        if not isinstance(meal, dict):
+            continue
+        for item in (meal.get("items") or []):
+            if not isinstance(item, dict):
+                continue
+            any_item = True
+            for dst, src in _SUM.items():
+                v = item.get(src)
+                if isinstance(v, (int, float)):
+                    totals[dst] += v
+    if any_item:
+        for dst in _SUM:
+            out[dst] = round(totals[dst], 1)
     return out
 
 
-def fetch_normalized(session, day):
-    return normalize_nutrition(fetch_nutrition(session, day))
+def fetch_normalized(client, day):
+    return normalize_nutrition(fetch_nutrition(client, day))
 ```
 
 - [ ] **Step 5: Run the test to verify it passes**
@@ -382,9 +422,9 @@ In `update_garmin.py`, insert **after** the fast/full `rows` block (after line 3
         try:
             old_nutri = old if fast else load_existing_rows(passphrase)
             carry_forward_nutrition(old_nutri, rows)
-            fsession = fitatu.login(f_email, f_pw)
+            fclient = fitatu.login(f_email, f_pw)
             f_days = int(os.environ.get("FITATU_DNI") or 14)
-            enrich_nutrition(rows, lambda d: fitatu.fetch_normalized(fsession, d), days=f_days)
+            enrich_nutrition(rows, lambda d: fitatu.fetch_normalized(fclient, d), days=f_days)
             print(f"Fitatu: uzupelniono odzywianie dla ostatnich {f_days} dni")
         except Exception as e:
             print("Fitatu pominiete (blad):", str(e)[:200])

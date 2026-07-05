@@ -227,3 +227,7 @@ make_token.py
 # Stary, NIEZASZYFROWANY zrzut danych zdrowotnych - nie moze trafic do repo publicznego.
 # Do repo commitujemy WYLACZNIE zaszyfrowany plik danych (blob AES-GCM).
 garmin-1f93f974b3e15654.json
+
+# Fitatu feasibility spike (temporary) — creds + surowa odpowiedz nie moga trafic do repo
+spike_*.py
+fitatu_sample.json
