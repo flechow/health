@@ -38,6 +38,9 @@ jobs:
         env:
           DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}
           DNI_OVERRIDE: ${{ github.event.inputs.days }}
+          FITATU_EMAIL: ${{ secrets.FITATU_EMAIL }}
+          FITATU_PASSWORD: ${{ secrets.FITATU_PASSWORD }}
+          FITATU_DNI: "14"
         run: python update_garmin.py
 
       - name: Zacommituj zmiany

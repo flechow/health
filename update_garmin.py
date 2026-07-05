@@ -16,6 +16,10 @@ import sys, json, os, time, base64, hashlib, getpass, urllib.parse, requests
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from datetime import date, timedelta
 from garminconnect import Garmin
+try:
+    import fitatu
+except Exception:
+    fitatu = None
 
 DNI = 120
 PAUZA = 0.15
@@ -393,6 +397,22 @@ def main():
             start = (today - timedelta(days=DNI - 1)).isoformat()
             rows = build_rows(g, start, koniec)
 
+    # ---- odzywianie z Fitatu (opcjonalne; nigdy nie psuje aktualizacji Garmina) ----
+    f_email = os.environ.get("FITATU_EMAIL")
+    f_pw = os.environ.get("FITATU_PASSWORD")
+    if fitatu and f_email and f_pw:
+        try:
+            old_nutri = old if fast else load_existing_rows(passphrase)
+            carry_forward_nutrition(old_nutri, rows)
+            fclient = fitatu.login(f_email, f_pw)
+            f_days = int(os.environ.get("FITATU_DNI") or 14)
+            enrich_nutrition(rows, lambda d: fitatu.fetch_normalized(fclient, d), days=f_days)
+            print(f"Fitatu: uzupelniono odzywianie dla ostatnich {f_days} dni")
+        except Exception as e:
+            print("Fitatu pominiete (blad):", str(e)[:200])
+    else:
+        print("Fitatu: brak FITATU_EMAIL/FITATU_PASSWORD — pomijam odzywianie.")
+
     blob = encrypt_rows(rows, passphrase)
     with open(PLIK, "w", encoding="utf-8") as f:
         json.dump(blob, f, separators=(",", ":"))
@@ -400,7 +420,7 @@ def main():
     def cnt(k):
         return sum(1 for r in rows if r.get(k) not in (None, ""))
     print(f"Zapisano {PLIK}: {len(rows)} dni")
-    for k in ("waga", "hrv", "temp_noc", "miejsce", "body_fat", "training_status"):
+    for k in ("waga", "hrv", "temp_noc", "miejsce", "body_fat", "training_status", "bialko", "kcal_spozyte"):
         print(f"  {k}: {cnt(k)}")
 
 
