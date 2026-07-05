@@ -214,17 +214,20 @@ def merge_rows(old, new):
 
 NUTRI_KEYS = ("bialko", "kcal_spozyte", "wegle", "tluszcz", "blonnik", "fitatu")
 
+
 def carry_forward_nutrition(old_rows, new_rows):
     """Kopiuje pola odzywiania ze starych wierszy na wiersze o tej samej dacie,
     ktore ich jeszcze nie maja. Chroni historie przy pelnym przebiegu (bez merge)."""
     old_by = {r["data"]: r for r in (old_rows or []) if isinstance(r, dict) and r.get("data")}
     for r in new_rows:
+        if not isinstance(r, dict): continue
         src = old_by.get(r.get("data"))
         if not src:
             continue
         for k in NUTRI_KEYS:
             if k not in r and k in src:
                 r[k] = src[k]
+
 
 def enrich_nutrition(rows, fetch_fn, days=14):
     """Dla ostatnich `days` dni ustawia pola odzywiania z fetch_fn(date)->dict.
@@ -411,7 +414,7 @@ def main():
         except Exception as e:
             print("Fitatu pominiete (blad):", str(e)[:200])
     else:
-        print("Fitatu: brak FITATU_EMAIL/FITATU_PASSWORD — pomijam odzywianie.")
+        print("Fitatu: modul niedostepny lub brak FITATU_EMAIL/FITATU_PASSWORD — pomijam odzywianie.")
 
     blob = encrypt_rows(rows, passphrase)
     with open(PLIK, "w", encoding="utf-8") as f:

@@ -32,6 +32,9 @@ def test_empty_day_returns_null_core():
     out = fitatu.normalize_nutrition(raw)
     assert out["bialko"] is None
     assert out["kcal_spozyte"] is None
+    assert out["wegle"] is None
+    assert out["tluszcz"] is None
+    assert out["blonnik"] is None
     assert out["fitatu"] == raw
 
 def test_none_returns_all_null():

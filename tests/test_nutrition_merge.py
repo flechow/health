@@ -37,3 +37,16 @@ def test_enrich_skips_all_null_days():
                 "tluszcz": None, "blonnik": None, "fitatu": None}
     ug.enrich_nutrition(rows, fake_fetch, days=1)
     assert "bialko" not in rows[0]
+
+def test_carry_forward_handles_none_old_rows():
+    new = [_row("2026-06-01")]
+    ug.carry_forward_nutrition(None, new)
+    assert "bialko" not in new[0]
+
+def test_enrich_overwrites_carried_forward_value():
+    row = _row("2026-06-01", bialko=999)
+    def fake_fetch(day):
+        return {"bialko": 100, "kcal_spozyte": 1800, "wegle": 150,
+                "tluszcz": 60, "blonnik": 20, "fitatu": {}}
+    ug.enrich_nutrition([row], fake_fetch, days=1)
+    assert row["bialko"] == 100

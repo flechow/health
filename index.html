@@ -488,11 +488,11 @@ function fuelCard(){
     <p class="label">Paliwo (z Fitatu) · ${dayLabel}</p>
     <div class="metrics">
       <div class="m" data-info="bialko">
-        <div class="mv mono" style="${protHit?okStyle:lowStyle}">${protNow!=null?r1(protNow):"—"}<span style="font-size:13px;color:var(--mut)"> g</span></div>
+        <div class="mv mono" style="${protNow==null?'':(protHit?okStyle:lowStyle)}">${protNow!=null?r1(protNow):"—"}<span style="font-size:13px;color:var(--mut)"> g</span></div>
         <div class="ml">Białko${protTgt?` / cel ${protTgt} g`:""}${ic()}</div>
       </div>
       <div class="m" data-info="bialko">
-        <div class="mv mono">${r1(prot7)}<span style="font-size:13px;color:var(--mut)"> g</span></div>
+        <div class="mv mono">${prot7!=null?r1(prot7):"—"}<span style="font-size:13px;color:var(--mut)"> g</span></div>
         <div class="ml">Białko (śr. 7 dni)${ic()}</div>
       </div>
       <div class="m" data-info="kcal">
@@ -649,8 +649,8 @@ function priorities(rows){
     const prot7=mean(rows.map(r=>r.bialko).filter(x=>x!=null&&!isNaN(x)).slice(-7));
     if(prot7!=null && prot7 < _tg.proteinG*0.85)
       C.push({key:"protein",icon:"🥩",title:"Dobij białko",note:`Śr. 7 dni ${Math.round(prot7)} g < cel ${_tg.proteinG} g — białko chroni mięśnie w redukcji.`,weight:7});
-    const kcal3=rows.map(r=>r.kcal_spozyte).filter(x=>x!=null&&!isNaN(x)).slice(-3);
-    if(kcal3.length===3 && kcal3.every(v=>v<_tg.kcalFloor))
+    const kcal3=rows.slice(-3).map(r=>r.kcal_spozyte);
+    if(kcal3.length===3 && kcal3.every(v=>v!=null&&!isNaN(v)&&v<_tg.kcalFloor))
       C.push({key:"deficit",icon:"⚠️",title:"Za duży deficyt",note:`3 dni poniżej ${_tg.kcalFloor} kcal — chronisz mięśnie, dodaj jedzenia.`,weight:8});
   }
   C.sort((x,y)=>y.weight-x.weight);
