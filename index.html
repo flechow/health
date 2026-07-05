@@ -777,6 +777,11 @@ function progressView(rows){
     <div class="card">
       <p class="label">Kluczowe trendy</p>
       ${trend("Waga",mw.slice(-60),"kg",false,"weight","#fbbf24")||`<div class="sub">Waga: za mało danych.</div>`}
+      ${trend("Talia",circSeries("waist").map(x=>x.v),"cm",false,"talia","#22d3ee")||""}
+      ${trend("Ramię",circSeries("arm").map(x=>x.v),"cm",true,"sylwetka","#a78bfa")||""}
+      ${trend("Udo",circSeries("thigh").map(x=>x.v),"cm",true,"sylwetka","#a78bfa")||""}
+      ${trend("Biodra",circSeries("hips").map(x=>x.v),"cm",false,"sylwetka","#a78bfa")||""}
+      ${trend("Kark",circSeries("neck").map(x=>x.v),"cm",false,"sylwetka","#a78bfa")||""}
       ${trend("HRV nocne",nzslice("hrv",60),"ms",true,"hrv","#10b981")}
       ${trend("VO₂max",nzslice("vo2max",90),"",true,"vo2max","#6366f1")}
       ${trend("Kroki (dz.)",nzslice("kroki",30),"",true,"steps","#f59e0b")}
