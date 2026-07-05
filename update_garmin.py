@@ -208,6 +208,34 @@ def merge_rows(old, new):
     return sorted(by.values(), key=lambda x: x["data"])
 
 
+NUTRI_KEYS = ("bialko", "kcal_spozyte", "wegle", "tluszcz", "blonnik", "fitatu")
+
+def carry_forward_nutrition(old_rows, new_rows):
+    """Kopiuje pola odzywiania ze starych wierszy na wiersze o tej samej dacie,
+    ktore ich jeszcze nie maja. Chroni historie przy pelnym przebiegu (bez merge)."""
+    old_by = {r["data"]: r for r in (old_rows or []) if isinstance(r, dict) and r.get("data")}
+    for r in new_rows:
+        src = old_by.get(r.get("data"))
+        if not src:
+            continue
+        for k in NUTRI_KEYS:
+            if k not in r and k in src:
+                r[k] = src[k]
+
+def enrich_nutrition(rows, fetch_fn, days=14):
+    """Dla ostatnich `days` dni ustawia pola odzywiania z fetch_fn(date)->dict.
+    Pomija dni bez danych (same None)."""
+    window = [r for r in rows if r.get("data")][-days:]
+    for r in window:
+        nutri = fetch_fn(r["data"])
+        if not isinstance(nutri, dict):
+            continue
+        if all(nutri.get(k) is None for k in ("bialko", "kcal_spozyte")):
+            continue
+        for k in NUTRI_KEYS:
+            r[k] = nutri.get(k)
+
+
 # ===================== budowanie wierszy =====================
 def build_rows(g, start, koniec):
     wmap = {}
