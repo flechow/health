@@ -56,6 +56,9 @@
   .btn-sm{border:0; border-radius:12px; padding:0 18px; background:var(--amber); color:#0a0a0a;
     font-weight:600; font-size:14px; cursor:pointer;}
   .flex{display:flex; gap:8px; margin-top:14px;}
+  .circ-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:12px}
+  .circ-l{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:4px}
+  .circ-l input{width:64px}
   .metrics{display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; margin-top:14px;}
   .m .mv{font-size:24px; font-weight:600;}
   .m .ml{font-size:12px; color:var(--mut); margin-top:2px;}
@@ -528,6 +531,35 @@ function fuelCard(){
   </div>`;
 }
 
+function sylwetkaCard(){
+  const tg=bodyTargets();
+  const waistS=circSeries("waist");
+  const latestRow=(gar&&gar.rows&&gar.rows.length)?gar.rows[gar.rows.length-1]:{};
+  const bf=(latestRow.body_fat!=null&&!isNaN(latestRow.body_fat))?latestRow.body_fat:null;
+  const mus=(latestRow.muscle_kg!=null&&!isNaN(latestRow.muscle_kg))?latestRow.muscle_kg:null;
+  // 4-week (last ~4 weekly entries) waist delta
+  const last=waistS.length?waistS[waistS.length-1].v:null;
+  const ref=waistS.length>=5?waistS[waistS.length-5].v:(waistS.length?waistS[0].v:null);
+  const d4=(last!=null&&ref!=null)?Math.round((last-ref)*10)/10:null;
+  const sites=[["waist","Talia",50,200],["neck","Kark",25,70],["hips","Biodra",60,200],["arm","Ramię",20,70],["thigh","Udo",30,110]];
+  const inputs=sites.map(([id,label])=>
+    `<label class="circ-l">${label}<input type="text" inputmode="decimal" id="circ-${id}" placeholder="cm"></label>`).join("");
+  const waistLine = last!=null
+    ? `<div class="mv mono">${r1(last)}<span style="font-size:13px;color:var(--mut)"> cm</span>${d4!=null&&Math.abs(d4)>=0.1?`<span class="arrow ${d4<0?"up":"down"}">${d4<0?"▼":"▲"}${Math.abs(d4)}</span>`:""}</div>
+       <div class="ml">Talia${tg&&tg.waistCm?` / cel ${tg.waistCm} cm`:""}${ic()}</div>`
+    : `<div class="sub">Dodaj pierwszy pomiar talii poniżej.</div>`;
+  return `<div class="card">
+    <p class="label">Sylwetka</p>
+    <div class="metrics">
+      <div class="m" data-info="talia">${waistLine}</div>
+      ${d4!=null?`<div class="m" data-info="sylwetka"><div class="mv mono">${d4<0?"−":"+"}${Math.abs(d4)}<span style="font-size:13px;color:var(--mut)"> cm</span></div><div class="ml">Talia − 4 tyg.${ic()}</div></div>`:""}
+      ${bf!=null?`<div class="m" data-info="bodyfat"><div class="mv mono">${r1(bf)}<span style="font-size:13px;color:var(--mut)"> %</span></div><div class="ml">Tłuszcz (waga)${ic()}</div></div>`:""}
+      ${mus!=null?`<div class="m" data-info="bodyfat"><div class="mv mono">${r1(mus)}<span style="font-size:13px;color:var(--mut)"> kg</span></div><div class="ml">Mięśnie (waga)${ic()}</div></div>`:""}
+    </div>
+    <div class="circ-row">${inputs}<button class="btn-sm" id="circ-save">Zapisz pomiar</button></div>
+  </div>`;
+}
+
 function kondycjaCard(){
   if(!gar||!gar.rows||!gar.rows.length) return "";
   const rows=gar.rows;
@@ -582,7 +614,10 @@ const INFO = {
  tghdl:{t:"TG / HDL",h:`<p>Trójglicerydy podzielone przez „dobry" cholesterol HDL — prosty, mocny wskaźnik zdrowia metabolicznego i insulinowrażliwości.</p><p>Spada od redukcji tłuszczu, ruchu i ograniczenia cukrów prostych. Wpisz wyniki z badań krwi, by śledzić.</p><p class="t">Cel: poniżej 3 (idealnie poniżej 2).</p>`},
  weight:{t:"Waga i tempo",h:`<p>Patrz na <b>trend</b>, nie na pojedynczy dzień — waga skacze od wody, soli i jedzenia. Zdrowe tempo w redukcji to ok. 0,5–1% masy ciała na tydzień.</p><p>Zbyt szybko = tracisz mięśnie i HRV. Wolno i stabilnie wygrywa.</p>`},
  spo2:{t:"SpO₂ we śnie",h:`<p>Wysycenie krwi tlenem w nocy. Zdrowe wartości to zwykle 94–99%. Regularnie niskie minima mogą sugerować gorszą jakość oddechu we śnie — warto obserwować.</p>`},
- tempnoc:{t:"Temperatura w nocy",h:`<p>Nocne minimum w Twojej okolicy (z danych pogodowych). Ciepłe noce potrafią pogarszać sen i podnosić tętno spoczynkowe — to kontekst do interpretacji regeneracji.</p>`}
+ tempnoc:{t:"Temperatura w nocy",h:`<p>Nocne minimum w Twojej okolicy (z danych pogodowych). Ciepłe noce potrafią pogarszać sen i podnosić tętno spoczynkowe — to kontekst do interpretacji regeneracji.</p>`},
+ talia:{t:"Obwód talii",h:`<p>Najtańszy wiarygodny wskaźnik utraty tłuszczu. Mierz na wysokości pępka, na luźnym wydechu, taśma przylega ale nie wciska. Zawsze o tej samej porze (rano).</p><p>Liczy się <b>trend tygodniowy</b>, nie pojedynczy pomiar. Talia w dół + waga ~stała + ciężary w górę = rekompozycja działa.</p><p class="t">Cel końcowy: ok. 94 cm.</p>`},
+ bodyfat:{t:"Skład ciała (z wagi)",h:`<p>Procent tłuszczu i masa mięśni pojawiają się tu automatycznie, jeśli używasz wagi Garmin Index. Bez niej ta sekcja jest ukryta — talia i tak odpowiada na pytanie o rekompozycję.</p>`},
+ sylwetka:{t:"Obwody ciała",h:`<p>Talia, kark, biodra, ramię, udo. Mierzone co tydzień. <b>Talia spada, a ramię/udo trzymają</b> = tłuszcz schodzi, mięśnie zostają. Wpisuj rano, w tych samych warunkach.</p>`}
 };
 
 let _sheetOpen=false;
@@ -874,6 +909,8 @@ function render(){
       </div>
     </div>
 
+    ${sylwetkaCard()}
+
     ${garminCard()}
 
     ${fuelCard()}
@@ -914,6 +951,22 @@ function render(){
   if(ws&&wi){
     ws.onclick=()=>{const v=parseFloat((wi.value||"").replace(",",".")); if(!v||v<40||v>250)return; log.weights[tk]=Math.round(v*10)/10; save("fit-log-v1",log); render();};
     wi.onkeydown=(e)=>{if(e.key==="Enter")ws.onclick();};
+  }
+  const cs=document.getElementById("circ-save");
+  if(cs){
+    const clamps={waist:[50,200],neck:[25,70],hips:[60,200],arm:[20,70],thigh:[30,110]};
+    cs.onclick=()=>{
+      let wrote=false;
+      for(const id in clamps){
+        const el=document.getElementById("circ-"+id);
+        if(!el||!el.value) continue;
+        const v=parseFloat((el.value||"").replace(",","."));
+        const [lo,hi]=clamps[id];
+        if(!v||v<lo||v>hi) continue;
+        saveCirc(tk, id, v); wrote=true;
+      }
+      if(wrote) render();
+    };
   }
   document.querySelectorAll("input[data-ex]").forEach(inp=>{
     inp.onkeydown=(e)=>{ if(e.key==="Enter") inp.blur(); };
