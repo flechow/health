@@ -131,13 +131,10 @@ function streakCount(weekFlags){
   }
   return n;
 }
-function _weekKey(dstr){                      // Monday (UTC) of the ISO week, deterministic
-  const t=Date.parse(dstr); const wd=(new Date(t).getUTCDay()+6)%7;
-  return new Date(t-wd*86400000).toISOString().slice(0,10);
-}
+function bestRun(weekFlags){ let max=0,cur=0; for(const f of weekFlags){ if(f===null) continue; if(f===true){ cur++; if(cur>max) max=cur; } else cur=0; } return max; }
 function computeStreaks(rows, opts){
   const {proteinG,stepGoal,sleepGoalH,weekThreshold,trainedDates,trainingWeekdays,bestStored,todayKey}=opts;
-  const thisWeek=_weekKey(todayKey);
+  const thisWeek=_mondayKey(todayKey);
   const HAB=[
     {key:'protein',icon:'🥩',label:'Białko', hit:r=>r.bialko!=null&&!isNaN(r.bialko)&&r.bialko>=proteinG, elig:r=>r.bialko!=null&&!isNaN(r.bialko)},
     {key:'steps',  icon:'🚶',label:'Kroki',  hit:r=>r.kroki!=null&&!isNaN(r.kroki)&&r.kroki>=stepGoal,    elig:r=>r.kroki!=null&&!isNaN(r.kroki)},
@@ -147,7 +144,7 @@ function computeStreaks(rows, opts){
   ];
   return HAB.map(h=>{
     const byWeek={};
-    for(const r of rows){ if(!r||!r.data) continue; const wk=_weekKey(r.data);
+    for(const r of rows){ if(!r||!r.data) continue; const wk=_mondayKey(r.data);
       const b=(byWeek[wk]=byWeek[wk]||{hits:0,elig:0});
       if(h.elig(r)){ b.elig++; if(h.hit(r)) b.hits++; } }
     const weeks=Object.keys(byWeek).sort();
@@ -155,7 +152,8 @@ function computeStreaks(rows, opts){
     const flags=complete.map(w=>weeklyGood(byWeek[w].hits, byWeek[w].elig, weekThreshold));
     const current=streakCount(flags);
     const tw=byWeek[thisWeek]||{hits:0,elig:0};
-    const best=Math.max((bestStored&&bestStored[h.key])||0, current);
+    const windowBest=bestRun(flags);
+    const best=Math.max((bestStored&&bestStored[h.key])||0, windowBest);
     return {key:h.key, icon:h.icon, label:h.label, current, best, thisWeek:{hits:tw.hits, elig:tw.elig}};
   });
 }
@@ -167,18 +165,18 @@ function _mean(vals){
 
 function weeklyCheckin(rows, opts){
   const {waistByDate, trainedDates, trainingWeekdays, streaks, todayKey}=opts;
-  const thisWeek=_weekKey(todayKey);
+  const thisWeek=_mondayKey(todayKey);
 
   // Group rows by week; collect all week keys appearing in data
   const byWeek={};
   for(const r of (rows||[])){
     if(!r||!r.data) continue;
-    const wk=_weekKey(r.data);
+    const wk=_mondayKey(r.data);
     (byWeek[wk]=byWeek[wk]||[]).push(r);
   }
   // Also register weeks from waistByDate
   for(const d of Object.keys(waistByDate||{})){
-    const wk=_weekKey(d);
+    const wk=_mondayKey(d);
     byWeek[wk]=byWeek[wk]||[];
   }
 
@@ -202,8 +200,8 @@ function weeklyCheckin(rows, opts){
   }
   function waistDelta(){
     const wb=waistByDate||{};
-    const lm=_mean(Object.entries(wb).filter(([d])=>_weekKey(d)===lastWeek).map(([,v])=>v));
-    const pm=_mean(Object.entries(wb).filter(([d])=>_weekKey(d)===priorWeek).map(([,v])=>v));
+    const lm=_mean(Object.entries(wb).filter(([d])=>_mondayKey(d)===lastWeek).map(([,v])=>v));
+    const pm=_mean(Object.entries(wb).filter(([d])=>_mondayKey(d)===priorWeek).map(([,v])=>v));
     return (lm==null||pm==null)?null:lm-pm;
   }
 
@@ -242,4 +240,4 @@ function weeklyCheckin(rows, opts){
   return {weekOf:lastWeek, deltas, sessions:{done,planned}, streakSummary, winLine};
 }
 
-if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention, weeklyGood, streakCount, computeStreaks, weeklyCheckin };
+if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention, weeklyGood, streakCount, bestRun, computeStreaks, weeklyCheckin };

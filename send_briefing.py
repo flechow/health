@@ -108,11 +108,6 @@ def today_session():
             "phase": ph.get("subtitle") or ""}
 
 
-def _week_of(dstr):
-    from datetime import date, timedelta
-    d = date.fromisoformat(dstr)
-    return d - timedelta(days=d.weekday())   # Monday
-
 def _in(row, start, end):
     try:
         d = date.fromisoformat(row.get("data"))
@@ -146,7 +141,8 @@ def weekly_summary(rows):
         from datetime import date, timedelta
         if not rows:
             return title, "Zbieram dane — pelne podsumowanie po pierwszym tygodniu."
-        this_mon = date.today() - timedelta(days=date.today().weekday()) - timedelta(days=7)  # last complete week
+        today = date.today()
+        this_mon = today - timedelta(days=today.weekday()) - timedelta(days=7)  # last complete week
         prev_mon = this_mon - timedelta(days=7)
         def wk(mon):
             end = mon + timedelta(days=6)

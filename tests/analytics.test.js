@@ -187,3 +187,9 @@ test('computeStreaks: protein streak over complete weeks, in-progress excluded',
   assert.strictEqual(p.current, 3);          // 3 good complete weeks
   assert.strictEqual(p.best, 3);
 });
+
+test('bestRun / computeStreaks best captures a past ended streak', () => {
+  assert.strictEqual(A.bestRun([true,true,true,false,true]), 3);
+  assert.strictEqual(A.bestRun([true,null,true,false,true,true]), 2); // neutral bridges but doesn't count: true,null,true = 2 hits
+  assert.strictEqual(A.bestRun([]), 0);
+});

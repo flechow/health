@@ -884,13 +884,13 @@ function checkinCard(){
   if(d.talia!=null) lines.push(`<div class="tgt"><div class="n">Talia</div><div class="note">${r1(d.talia)} cm ${arr(d.talia,false)}</div></div>`);
   if(d.bodyFat!=null) lines.push(`<div class="tgt"><div class="n">Tłuszcz</div><div class="note">${r1(d.bodyFat)} % ${arr(d.bodyFat,false)}</div></div>`);
   if(d.bialko!=null) lines.push(`<div class="tgt"><div class="n">Białko</div><div class="note">${r1(d.bialko)} g ${arr(d.bialko,true)}</div></div>`);
-  lines.push(`<div class="tgt"><div class="n">Treningi</div><div class="note">${ci.sessions.done||0}/${ci.sessions.planned||0}</div></div>`);
+  lines.push(`<div class="tgt"><div class="n">Treningi</div><div class="note">${(ci.sessions||{}).done||0}/${(ci.sessions||{}).planned||0}</div></div>`);
   if(d.sen!=null) lines.push(`<div class="tgt"><div class="n">Sen</div><div class="note">${r1(d.sen)} h ${arr(d.sen,true)}</div></div>`);
   if(d.hrv!=null) lines.push(`<div class="tgt"><div class="n">HRV</div><div class="note">${r1(d.hrv)} ms ${arr(d.hrv,true)}</div></div>`);
   const sumTxt=(ci.streakSummary||[]).length?(ci.streakSummary.map(s=>`${s.label} ${s.current} tyg.`).join(" · ")):"";
   return `<div class="card" data-info="checkin">
     <p class="label">Podsumowanie tygodnia${ib('checkin')}</p>
-    <div class="focus-t" style="font-size:14px;margin-top:10px">🏆 ${ci.winLine||""}</div>
+    ${ci.winLine?`<div class="focus-t" style="font-size:14px;margin-top:10px">🏆 ${ci.winLine}</div>`:""}
     ${lines.join("")}
     ${sumTxt?`<div class="sub" style="margin-top:8px">${sumTxt}</div>`:""}
   </div>`;
