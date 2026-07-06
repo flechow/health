@@ -786,9 +786,12 @@ function priorities(rows){
   try{
     const _ph2=activePhase();
     const _exMeta2={};
-    if(_ph2){ Object.values(_ph2.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id){ const m=e.scheme&&e.scheme.match(/\d+[×x]\s*(\d+)/); _exMeta2[e.id]={name:e.name||e.id, schemeReps:m?parseInt(m[1],10):0}; } }); }); }
+    if(_ph2){ Object.values(_ph2.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id){ const m=e.scheme&&e.scheme.match(/(\d+)[×x]\s*(\d+)/); _exMeta2[e.id]={name:e.name||e.id, schemeReps:m?parseInt(m[1],10)*parseInt(m[2],10):0}; } }); }); }
     const _ret2=strengthRetention(log.exHist, _exMeta2, analyticsCfg().e1rm);
-    if(_ret2.overall.dataQuality==="reps" && _ret2.overall.e1rmTrend==="down")
+    const _acfgS=analyticsCfg();
+    const _tS=weightTrend(mergedWeights(), _acfgS.emaAlpha);
+    const _mS=(_tS.length>=14)? weightSlope(_tS,_acfgS.etaWindowDays).m : null;
+    if(_ret2.overall.dataQuality==="reps" && _ret2.overall.e1rmTrend==="down" && _mS!=null && _mS<0)
       C.push({key:"strength",icon:"💪",title:"Siła spada w redukcji",note:"e1RM w dół — utrzymaj ciężary i dołóż białka, by chronić mięśnie.",weight:7.5});
   }catch(e){}
   C.sort((x,y)=>y.weight-x.weight);
@@ -886,7 +889,7 @@ function progressView(rows){
       if(!exIds.length) return `<div class="card"><p class="label">Siła — progresja</p><div class="sub" style="margin-top:8px">Zapisuj ciężary przy ćwiczeniach w zakładce „Dziś", a tu pojawią się wykresy progresji.</div></div>`;
       const _ph=activePhase();
       const exMeta={};
-      if(_ph){ Object.values(_ph.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id){ const m=e.scheme&&e.scheme.match(/\d+[×x]\s*(\d+)/); exMeta[e.id]={name:e.name||e.id, schemeReps:m?parseInt(m[1],10):0}; } }); }); }
+      if(_ph){ Object.values(_ph.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id){ const m=e.scheme&&e.scheme.match(/(\d+)[×x]\s*(\d+)/); exMeta[e.id]={name:e.name||e.id, schemeReps:m?parseInt(m[1],10)*parseInt(m[2],10):0}; } }); }); }
       const _ret=strengthRetention(log.exHist, exMeta, analyticsCfg().e1rm);
       const _dq=_ret.overall.dataQuality;
       const _retById={};

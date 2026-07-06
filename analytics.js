@@ -112,7 +112,9 @@ function strengthRetention(exHist, exMeta, cfg){
   }
   const e1rmTrends=per.map(p=>p.e1rmSeries&&_trend(p.e1rmSeries,'e1rm')).filter(Boolean);
   const overallE=e1rmTrends.length?(e1rmTrends.includes("down")?"down":e1rmTrends.includes("up")?"up":"flat"):null;
-  return {perExercise:per, overall:{e1rmTrend:overallE, volTrend:null, dataQuality:anyReps?"reps":"weight-only"}};
+  const volTrends=per.map(p=>_trend(p.volSeries,'vol')).filter(Boolean);
+  const overallV=volTrends.length?(volTrends.includes("down")?"down":volTrends.includes("up")?"up":"flat"):null;
+  return {perExercise:per, overall:{e1rmTrend:overallE, volTrend:overallV, dataQuality:anyReps?"reps":"weight-only"}};
 }
 
 if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention };

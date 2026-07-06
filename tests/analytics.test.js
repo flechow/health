@@ -106,3 +106,9 @@ test('strengthRetention reports weight-only when no reps', () => {
   const r=A.strengthRetention({sq:[{kg:100,d:'2026-01-01'},{kg:102,d:'2026-01-08'}]}, {sq:{name:'Squat'}}, {maxValidReps:12});
   assert.strictEqual(r.overall.dataQuality,'weight-only');
 });
+test('weeklyVolume sums actual reps and falls back to schemeReps', () => {
+  const hist=[{kg:100,d:'2026-01-05'},{kg:100,d:'2026-01-07',reps:8}]; // same ISO week (Mon 2026-01-05)
+  const v=A.weeklyVolume(hist,30);   // 30 = fallback for the no-reps entry
+  assert.strictEqual(v.length,1);
+  assert.strictEqual(v[0].vol, 100*30+100*8);
+});
