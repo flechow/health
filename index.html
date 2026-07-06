@@ -370,13 +370,16 @@ function migrateStrength(){
   if(log.ex) for(const id in log.ex){ const e=log.ex[id]; if(e&&e.kg!=null) log.exHist[id]=[{kg:e.kg,d:e.d||""}]; }
   save("fit-log-v1",log);
 }
-function pushWeight(id,kg,tk){
+function pushWeight(id,kg,tk,reps,rpe){
   if(!log.exHist) log.exHist={};
   const h=log.exHist[id]||(log.exHist[id]=[]);
+  const entry={kg,d:tk};
+  if(reps!=null&&!isNaN(reps)&&reps>0) entry.reps=reps;
+  if(rpe!=null&&!isNaN(rpe)&&rpe>0) entry.rpe=rpe;
   const last=h[h.length-1];
-  if(last&&last.d===tk) last.kg=kg;          // ten sam dzien -> nadpisz
-  else h.push({kg,d:tk});
-  if(h.length>12) h.splice(0,h.length-12);    // trzymamy ostatnie 12 wpisow
+  if(last&&last.d===tk){ last.kg=kg; if(entry.reps!=null)last.reps=entry.reps; else delete last.reps; if(entry.rpe!=null)last.rpe=entry.rpe; else delete last.rpe; }
+  else h.push(entry);
+  if(h.length>24) h.splice(0,h.length-24);
   save("fit-log-v1",log);
 }
 // zawias biodrowy / duze partie -> wieksze skoki, gora ciala -> mniejsze
@@ -404,6 +407,7 @@ function exRow(ex, tk){
     </div>
     <div class="exw">
       <input type="text" inputmode="decimal" data-ex="${ex.id}" placeholder="${phv||"kg"}" />
+      <input type="text" inputmode="numeric" data-reps="${ex.id}" placeholder="powt." style="width:56px" value="${last&&last.reps!=null?last.reps:""}" />
       <div class="last">${last?"ost. "+fmt(last.kg)+" kg":"zapisz ciężar"}</div>
     </div></div>`;
 }
@@ -1059,7 +1063,9 @@ function render(){
     inp.onkeydown=(e)=>{ if(e.key==="Enter") inp.blur(); };
     inp.onchange=()=>{ const id=inp.getAttribute("data-ex");
       const v=parseFloat((inp.value||"").replace(",",".")); if(!v||v<=0||v>500) return;
-      pushWeight(id, Math.round(v*10)/10, tk); render(); };
+      const rInp=document.querySelector(`input[data-reps="${id}"]`);
+      const reps=rInp?parseInt((rInp.value||"").replace(",",""),10):null;
+      pushWeight(id, Math.round(v*10)/10, tk, (reps>0?reps:null)); render(); };
   });
   const rb=document.getElementById("refreshBtn");
   if(rb){ rb.onclick=refreshFromGarmin; if(refreshing) setRefreshLabel("Aktualizuję… (do ~3 min)", true); }
