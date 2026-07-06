@@ -139,6 +139,37 @@ test('weeklyCheckin: weight delta is week-avg vs prior-week-avg, M2 line null wh
   assert.ok(typeof ci.winLine === 'string' && ci.winLine.length>0);
 });
 
+test('weeklyCheckin: empty rows → neutral, never throws', () => {
+  const ci=A.weeklyCheckin([], {proteinG:180, waistByDate:{}, trainedDates:new Set(),
+    trainingWeekdays:new Set([1,2,3,4,5,6]), streaks:[], todayKey:'2026-06-23'});
+  assert.strictEqual(ci.deltas.waga, null);
+  assert.ok(typeof ci.winLine==='string' && ci.winLine.length>0);
+});
+
+test('weeklyCheckin: non-adjacent weeks → neutral (no misleading delta)', () => {
+  const rows=[];
+  for(const wStart of ['2026-06-01','2026-06-15']){ // gap: 06-08 week missing
+    for(let i=0;i<7;i++) rows.push({data:new Date(Date.parse(wStart)+i*86400000).toISOString().slice(0,10), waga:100, bialko:190, sen:7.5, hrv:60, kroki:9000}); }
+  const ci=A.weeklyCheckin(rows,{proteinG:180, waistByDate:{}, trainedDates:new Set(),
+    trainingWeekdays:new Set([1,2,3,4,5,6]), streaks:[], todayKey:'2026-06-23'});
+  assert.strictEqual(ci.deltas.waga, null);
+});
+
+test('weeklyCheckin: sessions.done and sessions.planned counts', () => {
+  const rows=[];
+  const mk=(d)=>({data:d, waga:80, bialko:190, sen:7.5, hrv:60, kroki:9000});
+  // priorWeek (2026-06-08) and lastWeek (2026-06-15) — adjacent, so guard passes
+  for(let i=0;i<7;i++) rows.push(mk(new Date(Date.parse('2026-06-08')+i*86400000).toISOString().slice(0,10)));
+  for(let i=0;i<7;i++) rows.push(mk(new Date(Date.parse('2026-06-15')+i*86400000).toISOString().slice(0,10)));
+  // trainedDates: Mon 2026-06-15 (UTC day 1) and Wed 2026-06-17 (UTC day 3) — both in trainingWeekdays
+  const trainedDates=new Set(['2026-06-15','2026-06-17']);
+  const trainingWeekdays=new Set([1,3,5]); // Mon, Wed, Fri → 3 planned days in lastWeek
+  const ci=A.weeklyCheckin(rows,{proteinG:180, waistByDate:{}, trainedDates,
+    trainingWeekdays, streaks:[], todayKey:'2026-06-23'});
+  assert.strictEqual(ci.sessions.done, 2);
+  assert.strictEqual(ci.sessions.planned, 3);
+});
+
 test('computeStreaks: protein streak over complete weeks, in-progress excluded', () => {
   // 3 complete weeks all hitting protein 6/7 days, plus an in-progress bad week
   const rows=[];

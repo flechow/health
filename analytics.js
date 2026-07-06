@@ -191,6 +191,7 @@ function weeklyCheckin(rows, opts){
 
   const lastWeek=completeWeeks[completeWeeks.length-1];
   const priorWeek=completeWeeks[completeWeeks.length-2];
+  if (Date.parse(lastWeek) - Date.parse(priorWeek) !== 7*86400000) return neutral;
   const lastRows=byWeek[lastWeek]||[];
   const priorRows=byWeek[priorWeek]||[];
 
