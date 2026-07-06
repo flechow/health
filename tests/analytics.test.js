@@ -28,11 +28,20 @@ test('linreg on noisy data gives positive seM', () => {
 });
 
 test('weightTrend steps ema by elapsed days across a gap', () => {
-  const pts = [{k:'2026-01-01',v:100},{k:'2026-01-06',v:100}]; // 5-day gap, same value
+  const pts = [{k:'2026-01-01',v:80},{k:'2026-01-06',v:100}]; // 5-day gap, value jumps 80->100
   const t = A.weightTrend(pts, 0.1);
   assert.strictEqual(t.length, 2);
-  assert.ok(Math.abs(t[1].ema-100) < 1e-9);
+  const expected = 100 - (100-80)*Math.pow(0.9,5); // 5 EMA steps ≈ 88.19
+  assert.ok(Math.abs(t[1].ema - expected) < 0.01, `gap-stepped ema ${t[1].ema} vs ${expected}`);
   assert.strictEqual(t[1].raw, 100);
+});
+
+test('weightTrend gap size changes the ema move', () => {
+  const oneDay = A.weightTrend([{k:'2026-01-01',v:80},{k:'2026-01-02',v:100}], 0.1);
+  const fiveDay = A.weightTrend([{k:'2026-01-01',v:80},{k:'2026-01-06',v:100}], 0.1);
+  // 1 step moves 80->82; 5 steps move much further toward 100
+  assert.ok(Math.abs(oneDay[1].ema - 82) < 0.01, `1-day ema ${oneDay[1].ema}`);
+  assert.ok(fiveDay[1].ema > oneDay[1].ema + 3, `5-day (${fiveDay[1].ema}) should exceed 1-day (${oneDay[1].ema})`);
 });
 
 test('weightSlope returns negative slope + cur on a decline', () => {
@@ -41,5 +50,5 @@ test('weightSlope returns negative slope + cur on a decline', () => {
   const s = A.weightSlope(t, 28);
   assert.ok(s.m < 0);
   assert.ok(s.cur < 116);
-  assert.ok(s.n >= 14);
+  assert.strictEqual(s.n, 28);
 });
