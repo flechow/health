@@ -49,4 +49,21 @@ function weightSlope(trend, windowDays){
   return r;
 }
 
-if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope };
+function etaProject(trend, slope, target, opts){
+  const nMin=(opts&&opts.nMin)||14, k=(opts&&opts.k)||1;
+  const {m, seM, n, r2, cur} = slope;
+  const base = {cur, target, m, seM, n, r2,
+    weeklyRateKg: m!=null?m*7:null,
+    weeklyRatePct: (m!=null&&cur)?m*7/cur*100:null,
+    daysExpected:null, daysEarliest:null, daysLatest:null};
+  if(m==null || n<nMin) return {...base, status:"insufficient"};
+  if(m>=0 || (m+k*seM)>=0) return {...base, status:"flat"};
+  const off=(slopeM)=> (cur-target)/(-slopeM);           // days at slope (kg/day)
+  const mFast=m-k*seM, mSlow=m+k*seM;                    // both negative in "ok" branch
+  return {...base, status:"ok",
+    daysExpected: Math.round(off(m)),
+    daysEarliest: Math.round(off(mFast)),
+    daysLatest: mSlow<0 ? Math.round(off(mSlow)) : null}; // null → "nieokreślony"
+}
+
+if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject };

@@ -52,3 +52,32 @@ test('weightSlope returns negative slope + cur on a decline', () => {
   assert.ok(s.cur < 116);
   assert.strictEqual(s.n, 28);
 });
+
+test('etaProject on a clean linear decline gives a sane expected offset', () => {
+  const pts = Array.from({length:40},(_,i)=>({k:`2026-03-${String(i+1).padStart(2,'0')}`, v:100-0.1*i}));
+  const t = A.weightTrend(pts, 0.1);
+  const s = A.weightSlope(t, 28);
+  const eta = A.etaProject(t, s, 90, {nMin:14, k:1});
+  assert.strictEqual(eta.status, 'ok');
+  assert.ok(eta.daysExpected > 0);
+  assert.ok(eta.daysEarliest <= eta.daysExpected && eta.daysExpected <= eta.daysLatest);
+  assert.ok(eta.weeklyRateKg < 0);
+});
+
+test('etaProject flat series → status flat, no date', () => {
+  const pts = Array.from({length:30},(_,i)=>({k:`2026-04-${String(i+1).padStart(2,'0')}`, v:100}));
+  const t=A.weightTrend(pts,0.1); const s=A.weightSlope(t,28);
+  assert.strictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'flat');
+});
+
+test('etaProject rising series is not ok', () => {
+  const pts = Array.from({length:30},(_,i)=>({k:`2026-05-${String(i+1).padStart(2,'0')}`, v:100+0.05*i}));
+  const t=A.weightTrend(pts,0.1); const s=A.weightSlope(t,28);
+  assert.notStrictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'ok');
+});
+
+test('etaProject too few points → insufficient', () => {
+  const pts = Array.from({length:5},(_,i)=>({k:`2026-06-0${i+1}`, v:100-0.1*i}));
+  const t=A.weightTrend(pts,0.1); const s=A.weightSlope(t,28);
+  assert.strictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'insufficient');
+});

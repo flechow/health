@@ -192,6 +192,7 @@ const DEFAULT_PLAN={
     cardio:{baseMin:35,stepMin:5,everyWeeks:2,capMin:50,zone:"tętno 125–140 · oddech nosem"},
     nutrition:{proteinG:180,kcalTarget:2200,kcalFloor:1850},
     body:{waistCm:100,bodyFatPct:15},
+    analytics:{emaAlpha:0.10,etaWindowDays:28,rate:{fastPct:1.3,hardFastPct:1.8,stallPct:0.1,stallWeeks:3},e1rm:{formula:"epley",maxValidReps:12}},
     days:{
      "1":{type:"cardio",name:"Zone 2 — orbitrek",icon:"🚴",detail:"spokojne, równe tempo"},
      "2":{type:"strength",name:"Siła A — full body",icon:"💪",detail:"tempo spokojne, pełen zakres ruchu",exercises:[
@@ -232,6 +233,11 @@ function bodyTargets(){
   const b=ph&&ph.body;
   if(!b) return null;
   return {waistCm:b.waistCm, bodyFatPct:b.bodyFatPct};
+}
+function analyticsCfg(){
+  const D={emaAlpha:0.10,etaWindowDays:28,rate:{fastPct:1.3,hardFastPct:1.8,stallPct:0.1,stallWeeks:3},e1rm:{formula:"epley",maxValidReps:12}};
+  const a=(activePhase()||{}).analytics||{};
+  return {...D, ...a, rate:{...D.rate, ...(a.rate||{})}, e1rm:{...D.e1rm, ...(a.e1rm||{})}};
 }
 function phaseStart(ph){
   const ov=planOverride();
@@ -618,7 +624,8 @@ const INFO = {
  tempnoc:{t:"Temperatura w nocy",h:`<p>Nocne minimum w Twojej okolicy (z danych pogodowych). Ciepłe noce potrafią pogarszać sen i podnosić tętno spoczynkowe — to kontekst do interpretacji regeneracji.</p>`},
  talia:{t:"Obwód talii",h:`<p>Najtańszy wiarygodny wskaźnik utraty tłuszczu. Mierz na wysokości pępka, na luźnym wydechu, taśma przylega ale nie wciska. Zawsze o tej samej porze (rano).</p><p>Liczy się <b>trend tygodniowy</b>, nie pojedynczy pomiar. Talia w dół + waga ~stała + ciężary w górę = rekompozycja działa.</p><p class="t">Cel końcowy: ok. 94 cm.</p>`},
  bodyfat:{t:"Skład ciała (z wagi)",h:`<p>Procent tłuszczu i masa mięśni pojawiają się tu automatycznie, jeśli używasz wagi Garmin Index. Bez niej ta sekcja jest ukryta — talia i tak odpowiada na pytanie o rekompozycję.</p>`},
- sylwetka:{t:"Obwody ciała",h:`<p>Talia, kark, biodra, ramię, udo. Mierzone co tydzień. <b>Talia spada, a ramię/udo trzymają</b> = tłuszcz schodzi, mięśnie zostają. Wpisuj rano, w tych samych warunkach.</p>`}
+ sylwetka:{t:"Obwody ciała",h:`<p>Talia, kark, biodra, ramię, udo. Mierzone co tydzień. <b>Talia spada, a ramię/udo trzymają</b> = tłuszcz schodzi, mięśnie zostają. Wpisuj rano, w tych samych warunkach.</p>`},
+ eta:{t:"Prognoza 90 kg",h:`<p>Data wyliczona z <b>wygładzonego trendu</b> wagi (EMA), nie z pojedynczych ważeń. Pokazujemy zakres „między … a …", bo tempo się waha.</p><p>Gdy trend jest płaski, nie zmyślamy daty — mówimy wprost, że prognoza jest niepewna.</p>`}
 };
 
 let _sheetOpen=false;
@@ -650,6 +657,27 @@ function acwrData(rows){
   else if(ratio<=1.5){ zone="watch"; label="Uwaga"; }
   else { zone="high"; label="Wysokie ryzyko"; }
   return {ratio,acute,chronic,zone,label};
+}
+function etaCard(){
+  const cfg=analyticsCfg();
+  const t=weightTrend(mergedWeights(), cfg.emaAlpha);
+  if(t.length<2) return "";
+  const s=weightSlope(t, cfg.etaWindowDays);
+  const eta=etaProject(t, s, (PLANDATA&&PLANDATA.goal&&PLANDATA.goal.target)||90, {nMin:14,k:1});
+  const fmtD=(off)=> off==null?null:new Date(Date.parse(t[t.length-1].k)+off*86400000).toLocaleDateString("pl-PL",{day:"numeric",month:"short",year:"numeric"});
+  let big, sub;
+  if(eta.status==="ok"){
+    big=fmtD(eta.daysExpected);
+    const e=fmtD(eta.daysEarliest), l=fmtD(eta.daysLatest);
+    sub=`między ${e} a ${l||"—"} · ${eta.weeklyRateKg.toFixed(2)} kg/tydz. (${eta.weeklyRatePct.toFixed(1)}%)`;
+  } else if(eta.status==="flat"){ big="trend płaski"; sub="brak wiarygodnej prognozy — waga stabilna."; }
+  else { big="—"; sub="Za mało danych na prognozę (zbieram trend)."; }
+  return `<div class="card" data-info="eta">
+    <p class="label">Prognoza 90 kg${ib('eta')}</p>
+    <div class="mv mono" style="font-size:22px;margin-top:6px">${big}</div>
+    <div class="sub" style="margin-top:4px">${sub}</div>
+    <div class="sub" style="margin-top:2px;color:var(--mut)">trend: ${r1(eta.cur)} kg</div>
+  </div>`;
 }
 function acwrCard(){
   if(!gar||!gar.rows) return "";
@@ -803,6 +831,7 @@ function progressView(rows){
     <div class="card">
       <p class="label">Kluczowe trendy</p>
       ${trend("Waga",mw.slice(-60),"kg",false,"weight","#fbbf24")||`<div class="sub">Waga: za mało danych.</div>`}
+      ${(()=>{ const et=weightTrend(mergedWeights(),analyticsCfg().emaAlpha).slice(-60); return et.length>=2?`<div class="trend"><div class="between"><div class="n" style="color:var(--mut);font-size:12px">Waga — trend (EMA)</div></div>${spark(et.map(p=>p.ema),"#fbbf2488")}</div>`:""; })()}
       ${trend("Talia",circSeries("waist").map(x=>x.v),"cm",false,"talia","#22d3ee")||""}
       ${trend("Ramię",circSeries("arm").map(x=>x.v),"cm",true,"sylwetka","#a78bfa")||""}
       ${trend("Udo",circSeries("thigh").map(x=>x.v),"cm",true,"sylwetka","#a78bfa")||""}
@@ -947,6 +976,8 @@ function render(){
     ${fuelCard()}
 
     ${kondycjaCard()}
+
+    ${etaCard()}
 
     ${acwrCard()}
 
