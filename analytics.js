@@ -118,4 +118,46 @@ function strengthRetention(exHist, exMeta, cfg){
   return {perExercise:per, overall:{e1rmTrend:overallE, volTrend:overallV, dataQuality:anyReps?"reps":"weight-only"}};
 }
 
-if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention };
+function weeklyGood(hits, eligible, threshold){
+  if(!eligible) return null;                 // zero eligible → neutral (bridges)
+  return hits >= Math.ceil(eligible*threshold);
+}
+function streakCount(weekFlags){
+  let n=0;
+  for(let i=weekFlags.length-1;i>=0;i--){
+    const f=weekFlags[i];
+    if(f===null) continue;                   // neutral bridges
+    if(f===true) n++; else break;
+  }
+  return n;
+}
+function _weekKey(dstr){                      // Monday (UTC) of the ISO week, deterministic
+  const t=Date.parse(dstr); const wd=(new Date(t).getUTCDay()+6)%7;
+  return new Date(t-wd*86400000).toISOString().slice(0,10);
+}
+function computeStreaks(rows, opts){
+  const {proteinG,stepGoal,sleepGoalH,weekThreshold,trainedDates,trainingWeekdays,bestStored,todayKey}=opts;
+  const thisWeek=_weekKey(todayKey);
+  const HAB=[
+    {key:'protein',icon:'🥩',label:'Białko', hit:r=>r.bialko!=null&&!isNaN(r.bialko)&&r.bialko>=proteinG, elig:r=>r.bialko!=null&&!isNaN(r.bialko)},
+    {key:'steps',  icon:'🚶',label:'Kroki',  hit:r=>r.kroki!=null&&!isNaN(r.kroki)&&r.kroki>=stepGoal,    elig:r=>r.kroki!=null&&!isNaN(r.kroki)},
+    {key:'sleep',  icon:'😴',label:'Sen',    hit:r=>r.sen!=null&&!isNaN(r.sen)&&r.sen>=sleepGoalH,        elig:r=>r.sen!=null&&!isNaN(r.sen)},
+    {key:'training',icon:'💪',label:'Trening',hit:r=>trainedDates.has(r.data),
+       elig:r=>trainingWeekdays.has((new Date(Date.parse(r.data)).getUTCDay())) },
+  ];
+  return HAB.map(h=>{
+    const byWeek={};
+    for(const r of rows){ if(!r||!r.data) continue; const wk=_weekKey(r.data);
+      const b=(byWeek[wk]=byWeek[wk]||{hits:0,elig:0});
+      if(h.elig(r)){ b.elig++; if(h.hit(r)) b.hits++; } }
+    const weeks=Object.keys(byWeek).sort();
+    const complete=weeks.filter(w=>w<thisWeek);
+    const flags=complete.map(w=>weeklyGood(byWeek[w].hits, byWeek[w].elig, weekThreshold));
+    const current=streakCount(flags);
+    const tw=byWeek[thisWeek]||{hits:0,elig:0};
+    const best=Math.max((bestStored&&bestStored[h.key])||0, current);
+    return {key:h.key, icon:h.icon, label:h.label, current, best, thisWeek:{hits:tw.hits, elig:tw.elig}};
+  });
+}
+
+if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention, weeklyGood, streakCount, computeStreaks };

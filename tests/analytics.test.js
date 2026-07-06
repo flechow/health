@@ -113,3 +113,33 @@ test('weeklyVolume sums actual reps and falls back to schemeReps', () => {
   assert.strictEqual(v[0].vol, 100*30+100*8);
 });
 test('rateBand m==null → ok', () => { assert.strictEqual(A.rateBand(null,null,{fastPct:1.3,hardFastPct:1.8,stallPct:0.1}).band,'ok'); });
+
+test('weeklyGood: 80% threshold, neutral on zero-eligible', () => {
+  assert.strictEqual(A.weeklyGood(5,6,0.8), true);   // ceil(4.8)=5
+  assert.strictEqual(A.weeklyGood(4,6,0.8), false);
+  assert.strictEqual(A.weeklyGood(0,0,0.8), null);   // neutral
+});
+test('streakCount: trailing goods, bridges neutral, stops at false', () => {
+  assert.strictEqual(A.streakCount([true,true,true]), 3);
+  assert.strictEqual(A.streakCount([true,false,true,true]), 2);
+  assert.strictEqual(A.streakCount([true,null,true]), 2);   // neutral bridges
+  assert.strictEqual(A.streakCount([false]), 0);
+  assert.strictEqual(A.streakCount([]), 0);
+});
+test('computeStreaks: protein streak over complete weeks, in-progress excluded', () => {
+  // 3 complete weeks all hitting protein 6/7 days, plus an in-progress bad week
+  const rows=[];
+  const mk=(d,b)=>({data:d, bialko:b, kroki:9000, sen:8});
+  // weeks starting Mon 2026-06-01, 06-08, 06-15 (complete), 06-22 in progress
+  for(const [wStart,good] of [['2026-06-01',6],['2026-06-08',6],['2026-06-15',6]]){
+    for(let i=0;i<7;i++){ const dt=new Date(Date.parse(wStart)+i*86400000).toISOString().slice(0,10);
+      rows.push(mk(dt, i<good?200:100)); }   // `good` days above target 180
+  }
+  rows.push(mk('2026-06-22',100)); // in-progress week, below target
+  const out=A.computeStreaks(rows, {proteinG:180, stepGoal:8000, sleepGoalH:7,
+    weekThreshold:0.8, trainedDates:new Set(), trainingWeekdays:new Set([1,2,3,4,5,6]),
+    bestStored:{}, todayKey:'2026-06-23'});
+  const p=out.find(s=>s.key==='protein');
+  assert.strictEqual(p.current, 3);          // 3 good complete weeks
+  assert.strictEqual(p.best, 3);
+});

@@ -14,6 +14,7 @@
       "nutrition": { "proteinG": 180, "kcalTarget": 2200, "kcalFloor": 1850 },
       "body": { "waistCm": 100, "bodyFatPct": 15 },
       "analytics": { "emaAlpha": 0.10, "etaWindowDays": 28, "rate": { "fastPct": 1.3, "hardFastPct": 1.8, "stallPct": 0.1, "stallWeeks": 3 }, "e1rm": { "formula": "epley", "maxValidReps": 12 } },
+      "habits": { "stepGoal": 8000, "sleepGoalH": 7.0, "weekThreshold": 0.8 },
       "days": {
         "1": { "type": "cardio", "name": "Zone 2 — orbitrek", "icon": "🚴", "detail": "spokojne, równe tempo" },
         "2": { "type": "strength", "name": "Siła A — full body", "icon": "💪", "detail": "tempo spokojne, pełen zakres ruchu",
@@ -49,6 +50,7 @@
       "nutrition": { "proteinG": 180, "kcalTarget": 2200, "kcalFloor": 1850 },
       "body": { "waistCm": 94, "bodyFatPct": 15 },
       "analytics": { "emaAlpha": 0.10, "etaWindowDays": 28, "rate": { "fastPct": 1.0, "hardFastPct": 1.5, "stallPct": 0.1, "stallWeeks": 3 }, "e1rm": { "formula": "epley", "maxValidReps": 12 } },
+      "habits": { "stepGoal": 8000, "sleepGoalH": 7.0, "weekThreshold": 0.8 },
       "days": {
         "1": { "type": "cardio", "name": "Zone 2 — orbitrek", "icon": "🚴", "detail": "spokojne tempo" },
         "2": { "type": "strength", "name": "Siła A — dół + push", "icon": "💪", "detail": "docisk vs Faza 1",
