@@ -160,4 +160,85 @@ function computeStreaks(rows, opts){
   });
 }
 
-if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention, weeklyGood, streakCount, computeStreaks };
+function _mean(vals){
+  const v=(vals||[]).filter(x=>x!=null&&!isNaN(x));
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+}
+
+function weeklyCheckin(rows, opts){
+  const {waistByDate, trainedDates, trainingWeekdays, streaks, todayKey}=opts;
+  const thisWeek=_weekKey(todayKey);
+
+  // Group rows by week; collect all week keys appearing in data
+  const byWeek={};
+  for(const r of (rows||[])){
+    if(!r||!r.data) continue;
+    const wk=_weekKey(r.data);
+    (byWeek[wk]=byWeek[wk]||[]).push(r);
+  }
+  // Also register weeks from waistByDate
+  for(const d of Object.keys(waistByDate||{})){
+    const wk=_weekKey(d);
+    byWeek[wk]=byWeek[wk]||[];
+  }
+
+  const completeWeeks=Object.keys(byWeek).filter(w=>w<thisWeek).sort();
+
+  const neutral={weekOf:null,
+    deltas:{waga:null,talia:null,bodyFat:null,bialko:null,sen:null,hrv:null},
+    sessions:{done:0,planned:0}, streakSummary:[], winLine:'Zbieramy dane — wróć za tydzień!'};
+  if(completeWeeks.length<2) return neutral;
+
+  const lastWeek=completeWeeks[completeWeeks.length-1];
+  const priorWeek=completeWeeks[completeWeeks.length-2];
+  const lastRows=byWeek[lastWeek]||[];
+  const priorRows=byWeek[priorWeek]||[];
+
+  function fieldDelta(f){
+    const lm=_mean(lastRows.map(r=>r[f]));
+    const pm=_mean(priorRows.map(r=>r[f]));
+    return (lm==null||pm==null)?null:lm-pm;
+  }
+  function waistDelta(){
+    const wb=waistByDate||{};
+    const lm=_mean(Object.entries(wb).filter(([d])=>_weekKey(d)===lastWeek).map(([,v])=>v));
+    const pm=_mean(Object.entries(wb).filter(([d])=>_weekKey(d)===priorWeek).map(([,v])=>v));
+    return (lm==null||pm==null)?null:lm-pm;
+  }
+
+  const deltas={
+    waga:fieldDelta('waga'), talia:waistDelta(),
+    bodyFat:fieldDelta('bodyFat'), bialko:fieldDelta('bialko'),
+    sen:fieldDelta('sen'), hrv:fieldDelta('hrv'),
+  };
+
+  // Sessions in lastWeek (Mon–Sun)
+  const t0=Date.parse(lastWeek);
+  let done=0, planned=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(t0+i*86400000);
+    const ds=d.toISOString().slice(0,10);
+    if(trainedDates&&trainedDates.has(ds)) done++;
+    if(trainingWeekdays&&trainingWeekdays.has(d.getUTCDay())) planned++;
+  }
+
+  const streakSummary=(streaks||[]).filter(s=>s.current>0).map(s=>({label:s.label,current:s.current}));
+
+  // winLine: pick the single most positive fact
+  const candidates=[];
+  if(done>=planned&&planned>0)
+    candidates.push({msg:'Wszystkie treningi zaliczone!', score:1000});
+  const best=streakSummary.reduce((b,s)=>s.current>b.current?s:b,{current:0,label:''});
+  if(best.current>0)
+    candidates.push({msg:`${best.label}: ${best.current} tyg. z rzędu`, score:best.current});
+  if(deltas.waga!=null&&deltas.waga<0)
+    candidates.push({msg:`Waga ↓ ${Math.abs(deltas.waga).toFixed(1)} kg w tygodniu`, score:Math.abs(deltas.waga)*10});
+  if(deltas.talia!=null&&deltas.talia<0)
+    candidates.push({msg:`Talia ↓ ${Math.abs(deltas.talia).toFixed(1)} cm w tygodniu`, score:Math.abs(deltas.talia)*5});
+  candidates.sort((a,b)=>b.score-a.score);
+  const winLine=candidates.length?candidates[0].msg:'Dobra robota — trzymaj kurs!';
+
+  return {weekOf:lastWeek, deltas, sessions:{done,planned}, streakSummary, winLine};
+}
+
+if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention, weeklyGood, streakCount, computeStreaks, weeklyCheckin };

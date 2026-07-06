@@ -126,6 +126,19 @@ test('streakCount: trailing goods, bridges neutral, stops at false', () => {
   assert.strictEqual(A.streakCount([false]), 0);
   assert.strictEqual(A.streakCount([]), 0);
 });
+test('weeklyCheckin: weight delta is week-avg vs prior-week-avg, M2 line null when absent', () => {
+  const rows=[];
+  const mk=(d,w,b)=>({data:d, waga:w, bialko:b, sen:7.5, hrv:60, kroki:9000});
+  // prior week avg 100, last complete week avg 99 (losing)
+  for(let i=0;i<7;i++) rows.push(mk(new Date(Date.parse('2026-06-08')+i*86400000).toISOString().slice(0,10),100,190));
+  for(let i=0;i<7;i++) rows.push(mk(new Date(Date.parse('2026-06-15')+i*86400000).toISOString().slice(0,10),99,190));
+  const ci=A.weeklyCheckin(rows,{proteinG:180, waistByDate:{}, trainedDates:new Set(),
+    trainingWeekdays:new Set([1,2,3,4,5,6]), streaks:[], todayKey:'2026-06-23'});
+  assert.ok(ci.deltas.waga < 0);               // week-avg lower than prior
+  assert.strictEqual(ci.deltas.talia, null);   // no waist data → omitted
+  assert.ok(typeof ci.winLine === 'string' && ci.winLine.length>0);
+});
+
 test('computeStreaks: protein streak over complete weeks, in-progress excluded', () => {
   // 3 complete weeks all hitting protein 6/7 days, plus an in-progress bad week
   const rows=[];
