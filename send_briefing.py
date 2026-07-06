@@ -21,6 +21,10 @@ PLIK = "garmin-7c1f93a2.json"          # ten sam plik co w update_garmin.py
 SUBS = "push/subscriptions.json"
 PLAN = "plan.json"
 
+MEASURE_DOW = 6   # sobota — przypomnienie o pomiarach
+CHECKIN_DOW = 7   # niedziela — podsumowanie tygodnia
+ACTIVE_MIN = 20   # min. intensywne = "sesja" (proxy, bo log treningow jest tylko w przegladarce)
+
 
 def _b64(s):
     return base64.b64decode(s)
@@ -104,7 +108,77 @@ def today_session():
             "phase": ph.get("subtitle") or ""}
 
 
+def _week_of(dstr):
+    from datetime import date, timedelta
+    d = date.fromisoformat(dstr)
+    return d - timedelta(days=d.weekday())   # Monday
+
+def _in(row, start, end):
+    try:
+        d = date.fromisoformat(row.get("data"))
+        return start <= d <= end
+    except Exception:
+        return False
+
+def _delta(a, b):
+    if a is None or b is None:
+        return None
+    return a - b
+
+def activity_sessions(rows, week_start):
+    from datetime import timedelta
+    end = week_start + timedelta(days=6)
+    n = 0
+    for r in rows:
+        try:
+            d = date.fromisoformat(r.get("data"))
+        except Exception:
+            continue
+        if week_start <= d <= end:
+            mi = r.get("min_intensywne")
+            if isinstance(mi, (int, float)) and mi >= ACTIVE_MIN:
+                n += 1
+    return n
+
+def weekly_summary(rows):
+    title = "📊 Podsumowanie tygodnia · Protokół"
+    try:
+        from datetime import date, timedelta
+        if not rows:
+            return title, "Zbieram dane — pelne podsumowanie po pierwszym tygodniu."
+        this_mon = date.today() - timedelta(days=date.today().weekday()) - timedelta(days=7)  # last complete week
+        prev_mon = this_mon - timedelta(days=7)
+        def wk(mon):
+            end = mon + timedelta(days=6)
+            return [r for r in rows if _in(r, mon, end)]
+        cur, prev = wk(this_mon), wk(prev_mon)
+        parts = []
+        dw = _delta(_avg([r.get("waga") for r in cur]), _avg([r.get("waga") for r in prev]))
+        if dw is not None:
+            parts.append(f"waga {dw:+.1f} kg")
+        pavg = _avg([r.get("bialko") for r in cur])
+        if pavg is not None:
+            parts.append(f"bialko sr. {round(pavg)} g")
+        sess = activity_sessions(rows, this_mon)
+        parts.append(f"~{sess} sesji")
+        ds = _delta(_avg([r.get("sen") for r in cur]), _avg([r.get("sen") for r in prev]))
+        if ds is not None:
+            parts.append(f"sen {ds:+.1f} h")
+        body = " · ".join(parts) if parts else "Tydzien zaliczony — otworz apke po szczegoly."
+        body += " · pelne serie w apce."
+        return title, body
+    except Exception as e:
+        print("weekly_summary blad:", e)
+        return title, "Podsumowanie tygodnia — otworz apke."
+
+
 def build_message(rows):
+    dow = date.today().isoweekday()   # 1=Pn..7=Nd
+    if dow == CHECKIN_DOW:
+        try:
+            return weekly_summary(rows)
+        except Exception:
+            pass
     rd = readiness(rows)
     sess = today_session() or {"name": "Twój plan", "type": "rest"}
     emoji = {"green": "🟢", "yellow": "🟡", "red": "🔴"}.get(rd["zone"], "⚪") if rd else "⚪"
@@ -117,6 +191,8 @@ def build_message(rows):
         tip = f"Dziś: {sess['name']} — masz zapas, możesz docisnąć."
     else:
         tip = f"Dziś: {sess['name']}."
+    if dow == MEASURE_DOW:
+        tip += " · ⚖️ dziś pomiary: waga na czczo + talia."
     return title, tip
 
 
