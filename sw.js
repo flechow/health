@@ -1,7 +1,8 @@
-const CACHE = 'protokol-v8';
+const CACHE = 'protokol-v9';
 const ASSETS = [
   './',
   './index.html',
+  './analytics.js',
   './plan.json',
   './manifest.webmanifest',
   './icon-192.png',
