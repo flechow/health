@@ -638,7 +638,9 @@ const INFO = {
  bodyfat:{t:"Skład ciała (z wagi)",h:`<p>Procent tłuszczu i masa mięśni pojawiają się tu automatycznie, jeśli używasz wagi Garmin Index. Bez niej ta sekcja jest ukryta — talia i tak odpowiada na pytanie o rekompozycję.</p>`},
  sylwetka:{t:"Obwody ciała",h:`<p>Talia, kark, biodra, ramię, udo. Mierzone co tydzień. <b>Talia spada, a ramię/udo trzymają</b> = tłuszcz schodzi, mięśnie zostają. Wpisuj rano, w tych samych warunkach.</p>`},
  eta:{t:"Prognoza 90 kg",h:`<p>Data wyliczona z <b>wygładzonego trendu</b> wagi (EMA), nie z pojedynczych ważeń. Pokazujemy zakres „między … a …", bo tempo się waha.</p><p>Gdy trend jest płaski, nie zmyślamy daty — mówimy wprost, że prognoza jest niepewna.</p>`},
- rate:{t:"Tempo redukcji",h:`<p>Ile procent masy ciała tracisz na tydzień, licząc z trendu (EMA). Zbyt szybko (dużo powyżej 1%/tydz. przy Twojej wadze) grozi utratą mięśni; zero tygodniami = zastój.</p><p>To sygnał <b>postępu</b>, nie regeneracji — nie zmienia wyniku „Gotowości".</p>`}
+ rate:{t:"Tempo redukcji",h:`<p>Ile procent masy ciała tracisz na tydzień, licząc z trendu (EMA). Zbyt szybko (dużo powyżej 1%/tydz. przy Twojej wadze) grozi utratą mięśni; zero tygodniami = zastój.</p><p>To sygnał <b>postępu</b>, nie regeneracji — nie zmienia wyniku „Gotowości".</p>`},
+ serie:{t:"Serie (nawyki)",h:`<p>Liczymy <b>dobre tygodnie</b>, nie dni z rzędu. Tydzień jest „dobry", gdy trafisz nawyk w ≥80% dni, w które się liczy. Jeden słaby dzień nie zrywa serii — dlatego to działa długoterminowo.</p><p>Bieżący tydzień nigdy nie zrywa serii; widzisz go jako postęp.</p>`},
+ checkin:{t:"Podsumowanie tygodnia",h:`<p>Trend tego tygodnia vs poprzedni: waga, talia, białko, treningi, sen/HRV. Patrzymy na <b>średnie 7-dniowe</b>, nie pojedyncze dni. Zaczynamy od wygranej tygodnia.</p>`}
 };
 
 let _sheetOpen=false;
@@ -816,6 +818,84 @@ function prioritiesCard(){
   </div>`;
 }
 
+// ===== M4 Adherence: adapters + streak/check-in cards =====
+function trainingWeekdays(){
+  const days=(activePhase()||{}).days||{};
+  const s=new Set();
+  for(const k in days){ if((days[k]||{}).type && days[k].type!=="rest"){ s.add(parseInt(k,10)); } }
+  return s;
+}
+function trainedDatesSet(){
+  const s=new Set(); for(const d in (log.days||{})){ if((log.days[d]||{}).trained) s.add(d); } return s;
+}
+function currentStreaks(){
+  if(!gar||!gar.rows) return [];
+  const hc=habitCfg(), ft=fuelTargets();
+  const out=computeStreaks(gar.rows, {proteinG:ft?ft.proteinG:180, stepGoal:hc.stepGoal,
+    sleepGoalH:hc.sleepGoalH, weekThreshold:hc.weekThreshold, trainedDates:trainedDatesSet(),
+    trainingWeekdays:trainingWeekdays(), bestStored:adhLog.bestStreak||{}, todayKey:key(new Date())});
+  let changed=false; adhLog.bestStreak=adhLog.bestStreak||{};
+  for(const s of out){ if((adhLog.bestStreak[s.key]||0)<s.best){ adhLog.bestStreak[s.key]=s.best; changed=true; } }
+  if(changed) save("fit-adh-v1", adhLog);
+  return out;
+}
+function serieCard(){
+  const streaks=currentStreaks();
+  if(!streaks.length) return "";
+  const anyElig=streaks.some(s=>(s.thisWeek.elig>0||s.best>0||s.current>0));
+  if(!anyElig){
+    return `<div class="card" data-info="serie">
+      <p class="label">Serie nawykowe${ib('serie')}</p>
+      <div class="sub" style="margin-top:10px">zbieramy dane — pierwsze podsumowanie po pełnym tygodniu</div>
+    </div>`;
+  }
+  const rows=streaks.map(s=>{
+    const elig=s.thisWeek.elig||0, hits=s.thisWeek.hits||0;
+    const barW=elig>0?Math.round(hits/elig*100):0;
+    const recBest=(s.best>s.current&&s.best>0)?`<span style="color:var(--mut2);font-size:11px"> · rekord ${s.best}</span>`:"";
+    const right=s.current===0
+      ?`<span style="color:var(--mut)">nowy start · w tym tyg. ${hits}/${elig}</span>`
+      :`<b style="color:var(--amber-l)">${s.current} tyg.</b>${recBest}`;
+    const bar=elig>0?`<div style="margin-top:4px;display:flex;align-items:center;gap:6px;justify-content:flex-end">
+        <span style="color:var(--mut2);font-size:11px">${hits}/${elig} w tym tyg.</span>
+        <div style="width:40px;height:4px;border-radius:2px;background:#232323;overflow:hidden"><div style="width:${barW}%;height:100%;background:var(--amber);border-radius:2px"></div></div>
+      </div>`:"";
+    return `<div class="tgt"><div class="n">${s.icon} ${s.label}</div><div style="text-align:right">${right}${s.current>0?bar:""}</div></div>`;
+  });
+  return `<div class="card" data-info="serie">
+    <p class="label">Serie nawykowe${ib('serie')}</p>
+    ${rows.join("")}
+  </div>`;
+}
+function checkinCard(){
+  if(!gar||!gar.rows) return "";
+  const waistByDate=Object.fromEntries(
+    Object.entries(bodyLog.circ||{}).filter(([,v])=>v&&v.waist!=null).map(([d,v])=>[d,v.waist])
+  );
+  const sts=currentStreaks();
+  const ci=weeklyCheckin(gar.rows,{waistByDate, trainedDates:trainedDatesSet(),
+    trainingWeekdays:trainingWeekdays(), streaks:sts, todayKey:key(new Date())});
+  if(!ci.weekOf) return "";
+  const d=ci.deltas;
+  const arr=(v,goodUp)=>v==null?"":(Math.abs(v)<0.15?"":`<span class="arrow ${(v>0)===goodUp?"up":"down"}">${v>0?"▲":"▼"}${Math.abs(v).toFixed(1)}</span>`);
+  const lines=[];
+  const wagaFmt=d.waga!=null?`${d.waga>0?"+":""}${r1(d.waga)} kg ${arr(d.waga,false)}`:"—";
+  lines.push(`<div class="tgt"><div class="n">Waga</div><div class="note">${wagaFmt}</div></div>`);
+  if(d.talia!=null) lines.push(`<div class="tgt"><div class="n">Talia</div><div class="note">${r1(d.talia)} cm ${arr(d.talia,false)}</div></div>`);
+  if(d.bodyFat!=null) lines.push(`<div class="tgt"><div class="n">Tłuszcz</div><div class="note">${r1(d.bodyFat)} % ${arr(d.bodyFat,false)}</div></div>`);
+  if(d.bialko!=null) lines.push(`<div class="tgt"><div class="n">Białko</div><div class="note">${r1(d.bialko)} g ${arr(d.bialko,true)}</div></div>`);
+  lines.push(`<div class="tgt"><div class="n">Treningi</div><div class="note">${ci.sessions.done||0}/${ci.sessions.planned||0}</div></div>`);
+  if(d.sen!=null) lines.push(`<div class="tgt"><div class="n">Sen</div><div class="note">${r1(d.sen)} h ${arr(d.sen,true)}</div></div>`);
+  if(d.hrv!=null) lines.push(`<div class="tgt"><div class="n">HRV</div><div class="note">${r1(d.hrv)} ms ${arr(d.hrv,true)}</div></div>`);
+  const sumTxt=(ci.streakSummary||[]).length?(ci.streakSummary.map(s=>`${s.label} ${s.current} tyg.`).join(" · ")):"";
+  return `<div class="card" data-info="checkin">
+    <p class="label">Podsumowanie tygodnia${ib('checkin')}</p>
+    <div class="focus-t" style="font-size:14px;margin-top:10px">🏆 ${ci.winLine||""}</div>
+    ${lines.join("")}
+    ${sumTxt?`<div class="sub" style="margin-top:8px">${sumTxt}</div>`:""}
+  </div>`;
+}
+
 // ===== Auto-progresja faz: wykrycie końca + jedno kliknięcie do następnej =====
 function nextPhase(ph){ const p=(PLANDATA&&PLANDATA.phases)||[]; return ph?p.find(x=>x.id===ph.id+1)||null:null; }
 function phaseTransitionCard(ph, wk){
@@ -985,6 +1065,7 @@ function render(){
     </div>
 
     ${view==='progress' ? progressView(rows) : `
+    ${t.getDay()===0?checkinCard():""}
     <div class="card">
       <div class="big mono">${(Math.round(cur*10)/10).toFixed(1)}<span style="font-size:18px;color:var(--mut)"> kg</span></div>
       <div class="sub">${toGoal>0?toGoal.toFixed(1)+" kg do celu 90":"cel osiągnięty 🎉"} · start 116</div>
@@ -1018,6 +1099,9 @@ function render(){
     ${phaseTransitionCard(ph, wk)}
 
     ${prioritiesCard()}
+
+    ${serieCard()}
+    ${t.getDay()!==0?checkinCard():""}
 
     <div class="card">
       <div class="between"><p class="label">Ten tydzień</p><p class="mono" style="color:var(--amber);margin:0;font-size:14px">${trained}/6</p></div>
