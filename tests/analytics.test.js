@@ -90,3 +90,19 @@ test('rateBand classifies loss speed', () => {
   assert.strictEqual(A.rateBand(-0.05,-0.001,o).band, 'stall');
   assert.strictEqual(A.rateBand(0.3,0.004,o).band, 'stall'); // gaining → stall (not losing)
 });
+
+test('epley & brzycki hand-checked', () => {
+  assert.ok(Math.abs(A.epley(100,5)-116.6667) < 1e-3);
+  assert.strictEqual(A.epley(100,1), 100);
+  assert.ok(Math.abs(A.brzycki(100,5)-112.5) < 1e-3);
+});
+test('e1rmSeries excludes missing/over-max reps', () => {
+  const hist=[{kg:100,d:'2026-01-01',reps:5},{kg:100,d:'2026-01-08'},{kg:100,d:'2026-01-15',reps:20}];
+  const s=A.e1rmSeries(hist,12);
+  assert.strictEqual(s.length,1);
+  assert.ok(Math.abs(s[0].e1rm-116.6667)<1e-3);
+});
+test('strengthRetention reports weight-only when no reps', () => {
+  const r=A.strengthRetention({sq:[{kg:100,d:'2026-01-01'},{kg:102,d:'2026-01-08'}]}, {sq:{name:'Squat'}}, {maxValidReps:12});
+  assert.strictEqual(r.overall.dataQuality,'weight-only');
+});

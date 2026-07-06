@@ -626,6 +626,8 @@ const INFO = {
  weight:{t:"Waga i tempo",h:`<p>Patrz na <b>trend</b>, nie na pojedynczy dzień — waga skacze od wody, soli i jedzenia. Zdrowe tempo w redukcji to ok. 0,5–1% masy ciała na tydzień.</p><p>Zbyt szybko = tracisz mięśnie i HRV. Wolno i stabilnie wygrywa.</p>`},
  spo2:{t:"SpO₂ we śnie",h:`<p>Wysycenie krwi tlenem w nocy. Zdrowe wartości to zwykle 94–99%. Regularnie niskie minima mogą sugerować gorszą jakość oddechu we śnie — warto obserwować.</p>`},
  tempnoc:{t:"Temperatura w nocy",h:`<p>Nocne minimum w Twojej okolicy (z danych pogodowych). Ciepłe noce potrafią pogarszać sen i podnosić tętno spoczynkowe — to kontekst do interpretacji regeneracji.</p>`},
+ e1rm:{t:"Szacowany 1RM (e1RM)",h:`<p>Przewidywany ciężar maksymalny z Twojego ciężaru roboczego i liczby powtórzeń (wzór Epleya). Rośnie/utrzymuje się = <b>mięśnie zostają</b> w redukcji.</p><p>Wpisuj powtórzenia w zakładce „Dziś", by go liczyć.</p>`},
+ tonnage:{t:"Objętość tygodniowa (tonaż)",h:`<p>Suma ciężar × powtórzenia w tygodniu — miara utrzymanego bodźca treningowego. Stabilny/rosnący tonaż chroni mięśnie podczas cięcia.</p>`},
  talia:{t:"Obwód talii",h:`<p>Najtańszy wiarygodny wskaźnik utraty tłuszczu. Mierz na wysokości pępka, na luźnym wydechu, taśma przylega ale nie wciska. Zawsze o tej samej porze (rano).</p><p>Liczy się <b>trend tygodniowy</b>, nie pojedynczy pomiar. Talia w dół + waga ~stała + ciężary w górę = rekompozycja działa.</p><p class="t">Cel końcowy: ok. 94 cm.</p>`},
  bodyfat:{t:"Skład ciała (z wagi)",h:`<p>Procent tłuszczu i masa mięśni pojawiają się tu automatycznie, jeśli używasz wagi Garmin Index. Bez niej ta sekcja jest ukryta — talia i tak odpowiada na pytanie o rekompozycję.</p>`},
  sylwetka:{t:"Obwody ciała",h:`<p>Talia, kark, biodra, ramię, udo. Mierzone co tydzień. <b>Talia spada, a ramię/udo trzymają</b> = tłuszcz schodzi, mięśnie zostają. Wpisuj rano, w tych samych warunkach.</p>`},
@@ -781,6 +783,14 @@ function priorities(rows){
     else if(rb.band==="stall")
       C.push({key:"rate",icon:"➖",title:"Waga stoi",note:"Trend płaski — dołóż deficytu lub kroków, jeśli chcesz ruszyć.",weight:5.5});
   }
+  try{
+    const _ph2=activePhase();
+    const _exMeta2={};
+    if(_ph2){ Object.values(_ph2.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id){ const m=e.scheme&&e.scheme.match(/\d+[×x]\s*(\d+)/); _exMeta2[e.id]={name:e.name||e.id, schemeReps:m?parseInt(m[1],10):0}; } }); }); }
+    const _ret2=strengthRetention(log.exHist, _exMeta2, analyticsCfg().e1rm);
+    if(_ret2.overall.dataQuality==="reps" && _ret2.overall.e1rmTrend==="down")
+      C.push({key:"strength",icon:"💪",title:"Siła spada w redukcji",note:"e1RM w dół — utrzymaj ciężary i dołóż białka, by chronić mięśnie.",weight:7.5});
+  }catch(e){}
   C.sort((x,y)=>y.weight-x.weight);
   const seen=new Set(), out=[]; for(const c of C){ if(seen.has(c.key))continue; seen.add(c.key); out.push(c); if(out.length>=3)break; }
   return out;
@@ -872,13 +882,30 @@ function progressView(rows){
       <p class="label" style="margin:14px 0 6px">Białko — średnia tygodniowa (g/dzień)</p>
       ${bars(wk.filter(w=>w.protein>0).map(w=>({label:w.short,v:w.protein})),"#f59e0b")}
     </div>
-    ${exIds.length?`<div class="card">
-      <p class="label">Siła — progresja${ib('strength')}</p>
-      ${exIds.map(id=>{ const vals=(log.exHist[id]||[]).map(e=>e.kg); const cur=vals[vals.length-1], d=cur-vals[0];
-        return `<div class="exprog"><div class="between"><div class="n">${nm[id]||id}</div>
-          <div class="mono"><b>${fmt(cur)}</b> kg ${vals.length>1&&d!==0?`<span class="arrow ${d>0?"up":"down"}">${d>0?"+":""}${fmt(d)}</span>`:""}</div></div>
-          ${vals.length>1?spark(vals,"#f59e0b"):`<div class="sub">Zapisz kolejny ciężar, by zobaczyć trend.</div>`}</div>`;}).join("")}
-    </div>`:`<div class="card"><p class="label">Siła — progresja</p><div class="sub" style="margin-top:8px">Zapisuj ciężary przy ćwiczeniach w zakładce „Dziś", a tu pojawią się wykresy progresji.</div></div>`}
+    ${(()=>{
+      if(!exIds.length) return `<div class="card"><p class="label">Siła — progresja</p><div class="sub" style="margin-top:8px">Zapisuj ciężary przy ćwiczeniach w zakładce „Dziś", a tu pojawią się wykresy progresji.</div></div>`;
+      const _ph=activePhase();
+      const exMeta={};
+      if(_ph){ Object.values(_ph.days||{}).forEach(d=>{ (d.exercises||[]).forEach(e=>{ if(e.id){ const m=e.scheme&&e.scheme.match(/\d+[×x]\s*(\d+)/); exMeta[e.id]={name:e.name||e.id, schemeReps:m?parseInt(m[1],10):0}; } }); }); }
+      const _ret=strengthRetention(log.exHist, exMeta, analyticsCfg().e1rm);
+      const _dq=_ret.overall.dataQuality;
+      const _retById={};
+      _ret.perExercise.forEach(p=>{ _retById[p.id]=p; });
+      const headline=_dq==="reps"?(_ret.overall.e1rmTrend==="down"?`<div class="sub" style="margin-top:6px;color:#f59e0b">⚠️ siła spada</div>`:`<div class="sub" style="margin-top:6px;color:#10b981">✅ utrzymujesz siłę</div>`):"";
+      return `<div class="card">
+        <p class="label">Siła — progresja${ib('strength')}</p>
+        ${headline}
+        ${exIds.map(id=>{ const vals=(log.exHist[id]||[]).map(e=>e.kg); const cur=vals[vals.length-1], d=cur-vals[0];
+          const rp=_retById[id];
+          return `<div class="exprog"><div class="between"><div class="n">${nm[id]||id}</div>
+            <div class="mono"><b>${fmt(cur)}</b> kg ${vals.length>1&&d!==0?`<span class="arrow ${d>0?"up":"down"}">${d>0?"+":""}${fmt(d)}</span>`:""}</div></div>
+            ${vals.length>1?spark(vals,"#f59e0b"):`<div class="sub">Zapisz kolejny ciężar, by zobaczyć trend.</div>`}
+            ${_dq==="reps"&&rp&&rp.e1rmSeries&&rp.e1rmSeries.length>1?`<div class="sub" style="margin-top:4px;color:var(--mut);font-size:11px">e1RM${ib('e1rm')}</div>${spark(rp.e1rmSeries.map(x=>x.e1rm),"#a78bfa")}`:""}
+            ${_dq==="reps"&&rp&&rp.volSeries&&rp.volSeries.length>0?`<div class="sub" style="margin-top:4px;color:var(--mut);font-size:11px">tonaż tygodniowy${ib('tonnage')}</div>${bars(rp.volSeries.map(v=>({label:v.week.slice(5),v:v.vol})),"#6366f1")}`:""}
+            </div>`;}).join("")}
+        ${_dq==="weight-only"?`<div class="sub" style="margin-top:8px">Zapisuj powtórzenia przy ciężarze, by zobaczyć e1RM.</div>`:""}
+      </div>`;
+    })()}
   `;
 }
 

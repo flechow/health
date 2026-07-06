@@ -77,4 +77,42 @@ function rateBand(weeklyRatePct, m, opts){
   return {band:"ok", pct};
 }
 
-if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand };
+function epley(kg,reps){ return reps===1 ? kg : kg*(1+reps/30); }
+function brzycki(kg,reps){ return kg*36/(37-reps); }
+function e1rmSeries(hist, maxReps){
+  return (hist||[]).filter(e=>e&&e.reps>0&&e.reps<=maxReps&&e.kg>0)
+    .map(e=>({d:e.d, e1rm:epley(e.kg,e.reps)}));
+}
+function _mondayKey(dstr){
+  const t=Date.parse(dstr); const d=new Date(t);
+  const wd=(d.getUTCDay()+6)%7; const mon=new Date(t-wd*86400000);
+  return mon.toISOString().slice(0,10);
+}
+function weeklyVolume(hist, schemeReps){
+  const by={};
+  for(const e of (hist||[])){ if(!e||e.kg==null||!e.d) continue;
+    const reps=(e.reps>0)?e.reps:(schemeReps||0); if(!reps) continue;
+    const wk=_mondayKey(e.d); by[wk]=(by[wk]||0)+e.kg*reps; }
+  return Object.keys(by).sort().map(week=>({week, vol:Math.round(by[week])}));
+}
+function _trend(series, key){ if(!series||series.length<2) return null;
+  const a=series[0][key], b=series[series.length-1][key];
+  return b>a*1.02?"up":b<a*0.98?"down":"flat"; }
+function strengthRetention(exHist, exMeta, cfg){
+  const maxReps=(cfg&&cfg.maxValidReps)||12;
+  const per=[]; let anyReps=false;
+  for(const id in (exHist||{})){
+    const hist=exHist[id]; const es=e1rmSeries(hist,maxReps);
+    if(es.length) anyReps=true;
+    const vs=weeklyVolume(hist, (exMeta&&exMeta[id]&&exMeta[id].schemeReps)||0);
+    per.push({id, name:(exMeta&&exMeta[id]&&exMeta[id].name)||id,
+      e1rmSeries:es.length?es:null,
+      e1rmDelta:es.length>=2?Math.round((es[es.length-1].e1rm-es[0].e1rm)*10)/10:null,
+      volSeries:vs, volDelta:vs.length>=2?vs[vs.length-1].vol-vs[0].vol:null});
+  }
+  const e1rmTrends=per.map(p=>p.e1rmSeries&&_trend(p.e1rmSeries,'e1rm')).filter(Boolean);
+  const overallE=e1rmTrends.length?(e1rmTrends.includes("down")?"down":e1rmTrends.includes("up")?"up":"flat"):null;
+  return {perExercise:per, overall:{e1rmTrend:overallE, volTrend:null, dataQuality:anyReps?"reps":"weight-only"}};
+}
+
+if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand, epley, brzycki, e1rmSeries, weeklyVolume, strengthRetention };
