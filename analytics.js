@@ -57,13 +57,14 @@ function etaProject(trend, slope, target, opts){
     weeklyRatePct: (m!=null&&cur)?m*7/cur*100:null,
     daysExpected:null, daysEarliest:null, daysLatest:null};
   if(m==null || n<nMin) return {...base, status:"insufficient"};
-  if(m>=0 || (m+k*seM)>=0) return {...base, status:"flat"};
+  if(m>=0) return {...base, status:"rising"};
+  if((m+k*seM)>=0) return {...base, status:"flat"};
   const off=(slopeM)=> (cur-target)/(-slopeM);           // days at slope (kg/day)
   const mFast=m-k*seM, mSlow=m+k*seM;                    // both negative in "ok" branch
   return {...base, status:"ok",
     daysExpected: Math.round(off(m)),
     daysEarliest: Math.round(off(mFast)),
-    daysLatest: mSlow<0 ? Math.round(off(mSlow)) : null}; // null → "nieokreślony"
+    daysLatest: mSlow<0 ? Math.round(off(mSlow)) : null}; // mSlow always <0 here (flat guard dominates); null kept defensive
 }
 
 function rateBand(weeklyRatePct, m, opts){

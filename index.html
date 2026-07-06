@@ -377,7 +377,7 @@ function pushWeight(id,kg,tk,reps,rpe){
   if(reps!=null&&!isNaN(reps)&&reps>0) entry.reps=reps;
   if(rpe!=null&&!isNaN(rpe)&&rpe>0) entry.rpe=rpe;
   const last=h[h.length-1];
-  if(last&&last.d===tk){ last.kg=kg; if(entry.reps!=null)last.reps=entry.reps; else delete last.reps; if(entry.rpe!=null)last.rpe=entry.rpe; else delete last.rpe; }
+  if(last&&last.d===tk){ last.kg=kg; if(entry.reps!=null)last.reps=entry.reps; if(entry.rpe!=null)last.rpe=entry.rpe; }
   else h.push(entry);
   if(h.length>24) h.splice(0,h.length-24);
   save("fit-log-v1",log);
@@ -677,7 +677,8 @@ function etaCard(){
     big=fmtD(eta.daysExpected);
     const e=fmtD(eta.daysEarliest), l=fmtD(eta.daysLatest);
     sub=`między ${e} a ${l||"—"} · ${eta.weeklyRateKg.toFixed(2)} kg/tydz. (${eta.weeklyRatePct.toFixed(1)}%)`;
-  } else if(eta.status==="flat"){ big="trend płaski"; sub="brak wiarygodnej prognozy — waga stabilna."; }
+  } else if(eta.status==="rising"){ big="trend rosnący"; sub="waga rośnie — brak prognozy zejścia do 90 kg."; }
+  else if(eta.status==="flat"){ big="trend płaski"; sub="brak wiarygodnej prognozy — waga stabilna."; }
   else { big="—"; sub="Za mało danych na prognozę (zbieram trend)."; }
   return `<div class="card" data-info="eta">
     <p class="label">Prognoza 90 kg${ib('eta')}</p>
@@ -732,7 +733,7 @@ function priorities(rows){
   if(vo2Trend!=null&&vo2Trend<=0)
     C.push({key:"vo2max",icon:"🫁",title:"Rusz VO₂max",note:"Trend płaski — trzymaj Zone 2 i raz w tygodniu krótki akcent tempowy.",weight:5});
   C.push({key:"strength",icon:"💪",title:"Nie odpuszczaj siły",note:"2 sesje w tygodniu chronią mięśnie w redukcji. Progresuj powoli.",weight:4});
-  C.push({key:"weight",icon:"⚖️",title:"Trzymaj stabilne tempo",note:"0,5–1% masy na tydzień. Patrz na trend, nie na pojedynczy dzień. Szczegółowe tempo powyżej.",weight:3});
+  C.push({key:"weight",icon:"⚖️",title:"Trzymaj stabilne tempo",note:"0,5–1% masy na tydzień. Patrz na trend, nie na pojedynczy dzień.",weight:3});
   const _tg=fuelTargets();
   if(_tg){
     const prot7=mean(rows.map(r=>r.bialko).filter(x=>x!=null&&!isNaN(x)).slice(-7));
@@ -1096,6 +1097,17 @@ function render(){
       const rInp=document.querySelector(`input[data-reps="${id}"]`);
       const reps=rInp?parseInt((rInp.value||"").replace(",",""),10):null;
       pushWeight(id, Math.round(v*10)/10, tk, (reps>0?reps:null)); render(); };
+  });
+  document.querySelectorAll("input[data-reps]").forEach(inp=>{
+    inp.onkeydown=(e)=>{ if(e.key==="Enter") inp.blur(); };
+    inp.onchange=()=>{ const id=inp.getAttribute("data-reps");
+      const reps=parseInt((inp.value||"").replace(",",""),10);
+      if(!(reps>0)) return;
+      const wInp=document.querySelector(`input[data-ex="${id}"]`);
+      let kg=(wInp&&wInp.value)?parseFloat((wInp.value||"").replace(",",".")):null;
+      if(kg==null){ const h=(log.exHist&&log.exHist[id])||[]; const lt=(h.length&&h[h.length-1].d===tk)?h[h.length-1]:null; kg=lt?lt.kg:null; }
+      if(kg==null||kg<=0||kg>500) return;   // no weight yet -> can't save reps alone
+      pushWeight(id, Math.round(kg*10)/10, tk, reps); render(); };
   });
   const rb=document.getElementById("refreshBtn");
   if(rb){ rb.onclick=refreshFromGarmin; if(refreshing) setRefreshLabel("Aktualizuję… (do ~3 min)", true); }

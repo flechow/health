@@ -64,16 +64,16 @@ test('etaProject on a clean linear decline gives a sane expected offset', () => 
   assert.ok(eta.weeklyRateKg < 0);
 });
 
-test('etaProject flat series → status flat, no date', () => {
+test('etaProject flat series → status rising (m=0 ≥ 0)', () => {
   const pts = Array.from({length:30},(_,i)=>({k:`2026-04-${String(i+1).padStart(2,'0')}`, v:100}));
   const t=A.weightTrend(pts,0.1); const s=A.weightSlope(t,28);
-  assert.strictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'flat');
+  assert.strictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'rising');
 });
 
 test('etaProject rising series is not ok', () => {
   const pts = Array.from({length:30},(_,i)=>({k:`2026-05-${String(i+1).padStart(2,'0')}`, v:100+0.05*i}));
   const t=A.weightTrend(pts,0.1); const s=A.weightSlope(t,28);
-  assert.notStrictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'ok');
+  assert.strictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'rising');
 });
 
 test('etaProject too few points → insufficient', () => {
@@ -112,3 +112,4 @@ test('weeklyVolume sums actual reps and falls back to schemeReps', () => {
   assert.strictEqual(v.length,1);
   assert.strictEqual(v[0].vol, 100*30+100*8);
 });
+test('rateBand m==null → ok', () => { assert.strictEqual(A.rateBand(null,null,{fastPct:1.3,hardFastPct:1.8,stallPct:0.1}).band,'ok'); });
