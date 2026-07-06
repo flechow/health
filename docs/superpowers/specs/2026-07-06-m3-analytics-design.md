@@ -8,6 +8,20 @@
 > strength log is **APPROVED.** M3 therefore includes the small logging extension and computes
 > a true Epley e1RM + weekly tonnage for the strength-retention analytic (not the tonnage-only
 > fallback).
+>
+> **Resolved decisions (2026-07-06, planning):**
+> - **Testing architecture:** the pure math is **extracted into a new `analytics.js`** module
+>   (loaded by `index.html`, cached in `sw.js`, dual browser-global / `module.exports`), unit-
+>   tested with **`node --test`** (Node v25 available) using the hand-computed cases in Testing.
+>   The inline `index.html` code becomes a thin layer calling the tested functions.
+> - **Rate thresholds — phase-tuned.** Phase 1 (current, ~116 kg): `fastPct 1.3`, `hardFastPct
+>   1.8` (a large male can safely lose faster early). Later phases tighten toward the recomp
+>   ceiling: Phase 2 `fastPct 1.0`, `hardFastPct 1.5`. `stallPct 0.1`, `stallWeeks 3` both phases.
+> - **Defaults accepted:** `emaAlpha 0.10`, `etaWindowDays 28`, CI `k = 1·SE`, ETA shown as
+>   **earliest–expected–latest** and suppressed when the slope CI includes ≥0; **Epley** e1RM,
+>   `maxValidReps 12`; weight chart gets an **EMA overlay** (raw as faint reference); EMA uses
+>   **elapsed-day** stepping across gaps; exHist **ring buffer 12 → 24**; weekly volume falls
+>   back to **prescribed** reps (parsed from the scheme, labelled) when actual reps are absent.
 
 ## Goal
 
