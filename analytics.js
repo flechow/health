@@ -66,4 +66,15 @@ function etaProject(trend, slope, target, opts){
     daysLatest: mSlow<0 ? Math.round(off(mSlow)) : null}; // null → "nieokreślony"
 }
 
-if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject };
+function rateBand(weeklyRatePct, m, opts){
+  const fast=opts.fastPct, hard=opts.hardFastPct, stall=opts.stallPct;
+  if(m==null) return {band:"ok", pct:null};
+  const pct=Math.abs(weeklyRatePct);
+  if(m>=0) return {band:"stall", pct};
+  if(pct>hard) return {band:"hardFast", pct};
+  if(pct>fast) return {band:"fast", pct};
+  if(pct<stall) return {band:"stall", pct};
+  return {band:"ok", pct};
+}
+
+if (typeof module!=='undefined' && module.exports) module.exports = { ema, weightTrend, linreg, weightSlope, etaProject, rateBand };

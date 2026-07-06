@@ -81,3 +81,12 @@ test('etaProject too few points → insufficient', () => {
   const t=A.weightTrend(pts,0.1); const s=A.weightSlope(t,28);
   assert.strictEqual(A.etaProject(t,s,90,{nMin:14,k:1}).status, 'insufficient');
 });
+
+test('rateBand classifies loss speed', () => {
+  const o={fastPct:1.3,hardFastPct:1.8,stallPct:0.1};
+  assert.strictEqual(A.rateBand(-0.75,-0.01,o).band, 'ok');
+  assert.strictEqual(A.rateBand(-1.5,-0.02,o).band, 'fast');
+  assert.strictEqual(A.rateBand(-2.0,-0.03,o).band, 'hardFast');
+  assert.strictEqual(A.rateBand(-0.05,-0.001,o).band, 'stall');
+  assert.strictEqual(A.rateBand(0.3,0.004,o).band, 'stall'); // gaining → stall (not losing)
+});

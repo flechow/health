@@ -625,7 +625,8 @@ const INFO = {
  talia:{t:"Obwód talii",h:`<p>Najtańszy wiarygodny wskaźnik utraty tłuszczu. Mierz na wysokości pępka, na luźnym wydechu, taśma przylega ale nie wciska. Zawsze o tej samej porze (rano).</p><p>Liczy się <b>trend tygodniowy</b>, nie pojedynczy pomiar. Talia w dół + waga ~stała + ciężary w górę = rekompozycja działa.</p><p class="t">Cel końcowy: ok. 94 cm.</p>`},
  bodyfat:{t:"Skład ciała (z wagi)",h:`<p>Procent tłuszczu i masa mięśni pojawiają się tu automatycznie, jeśli używasz wagi Garmin Index. Bez niej ta sekcja jest ukryta — talia i tak odpowiada na pytanie o rekompozycję.</p>`},
  sylwetka:{t:"Obwody ciała",h:`<p>Talia, kark, biodra, ramię, udo. Mierzone co tydzień. <b>Talia spada, a ramię/udo trzymają</b> = tłuszcz schodzi, mięśnie zostają. Wpisuj rano, w tych samych warunkach.</p>`},
- eta:{t:"Prognoza 90 kg",h:`<p>Data wyliczona z <b>wygładzonego trendu</b> wagi (EMA), nie z pojedynczych ważeń. Pokazujemy zakres „między … a …", bo tempo się waha.</p><p>Gdy trend jest płaski, nie zmyślamy daty — mówimy wprost, że prognoza jest niepewna.</p>`}
+ eta:{t:"Prognoza 90 kg",h:`<p>Data wyliczona z <b>wygładzonego trendu</b> wagi (EMA), nie z pojedynczych ważeń. Pokazujemy zakres „między … a …", bo tempo się waha.</p><p>Gdy trend jest płaski, nie zmyślamy daty — mówimy wprost, że prognoza jest niepewna.</p>`},
+ rate:{t:"Tempo redukcji",h:`<p>Ile procent masy ciała tracisz na tydzień, licząc z trendu (EMA). Zbyt szybko (dużo powyżej 1%/tydz. przy Twojej wadze) grozi utratą mięśni; zero tygodniami = zastój.</p><p>To sygnał <b>postępu</b>, nie regeneracji — nie zmienia wyniku „Gotowości".</p>`}
 };
 
 let _sheetOpen=false;
@@ -725,7 +726,7 @@ function priorities(rows){
   if(vo2Trend!=null&&vo2Trend<=0)
     C.push({key:"vo2max",icon:"🫁",title:"Rusz VO₂max",note:"Trend płaski — trzymaj Zone 2 i raz w tygodniu krótki akcent tempowy.",weight:5});
   C.push({key:"strength",icon:"💪",title:"Nie odpuszczaj siły",note:"2 sesje w tygodniu chronią mięśnie w redukcji. Progresuj powoli.",weight:4});
-  C.push({key:"weight",icon:"⚖️",title:"Trzymaj stabilne tempo",note:"0,5–1% masy na tydzień. Patrz na trend, nie na pojedynczy dzień.",weight:3});
+  C.push({key:"weight",icon:"⚖️",title:"Trzymaj stabilne tempo",note:"0,5–1% masy na tydzień. Patrz na trend, nie na pojedynczy dzień. Szczegółowe tempo powyżej.",weight:3});
   const _tg=fuelTargets();
   if(_tg){
     const prot7=mean(rows.map(r=>r.bialko).filter(x=>x!=null&&!isNaN(x)).slice(-7));
@@ -759,6 +760,22 @@ function priorities(rows){
     // waist plateau vs target
     if(_bt&&_bt.waistCm&&!waistDown && wNow!=null && wNow>_bt.waistCm)
       C.push({key:"waistplateau",icon:"📉",title:"Talia stoi",note:`Obwód talii nie spada i jest powyżej celu ${_bt.waistCm} cm — sprawdź deficyt i kroki.`,weight:5});
+  }
+  const _acfg=analyticsCfg();
+  const _t=weightTrend(mergedWeights(), _acfg.emaAlpha);
+  if(_t.length>=14){
+    const _s=weightSlope(_t, _acfg.etaWindowDays);
+    const _eta=etaProject(_t,_s,(PLANDATA&&PLANDATA.goal&&PLANDATA.goal.target)||90,{nMin:14,k:1});
+    const rb=rateBand(_eta.weeklyRatePct, _s.m, _acfg.rate);
+    const _ftg=fuelTargets();
+    const kcal3=rows.map(r=>r.kcal_spozyte).filter(x=>x!=null&&!isNaN(x)).slice(-3);
+    const underFloor=_ftg&&kcal3.length===3&&kcal3.every(v=>v<_ftg.kcalFloor);
+    if(rb.band==="hardFast")
+      C.push({key:"rate",icon:"🚨",title:"Hamuj tempo — chronisz mięśnie",note:`Spadek ${rb.pct.toFixed(1)}%/tydz.${underFloor?" i kalorie pod podłogą":""} — zbyt szybko, ryzyko utraty mięśni.`,weight:8});
+    else if(rb.band==="fast")
+      C.push({key:"rate",icon:"⚠️",title:"Za szybkie tempo",note:`Spadek ${rb.pct.toFixed(1)}%/tydz. — trochę zwolnij, chroń mięśnie.`,weight:6.5});
+    else if(rb.band==="stall")
+      C.push({key:"rate",icon:"➖",title:"Waga stoi",note:"Trend płaski — dołóż deficytu lub kroków, jeśli chcesz ruszyć.",weight:5.5});
   }
   C.sort((x,y)=>y.weight-x.weight);
   const seen=new Set(), out=[]; for(const c of C){ if(seen.has(c.key))continue; seen.add(c.key); out.push(c); if(out.length>=3)break; }
@@ -901,6 +918,14 @@ function render(){
       f.why = (f.why?f.why+" · ":"") + `paliwo: białko ${Math.round(_p7)}/${_ftg.proteinG} g`;
     }
   }
+  try{
+    const _ra=analyticsCfg(); const _tt=weightTrend(mergedWeights(),_ra.emaAlpha);
+    if(_tt.length>=14){ const _ss=weightSlope(_tt,_ra.etaWindowDays);
+      const _ee=etaProject(_tt,_ss,90,{nMin:14,k:1}); const _rb=rateBand(_ee.weeklyRatePct,_ss.m,_ra.rate);
+      if(_rb.band==="fast"||_rb.band==="hardFast") f.why=(f.why?f.why+" · ":"")+`tempo: ${_ee.weeklyRatePct.toFixed(1)}%/tydz. — za szybko`;
+      else if(_rb.band==="stall") f.why=(f.why?f.why+" · ":"")+`tempo: waga stoi`;
+    }
+  }catch(e){}
   const isStrength = f.session.kind==="strength" && f.session.exercises && f.session.exercises.length;
   const sessInfo = f.session.kind==="strength" ? "strength" : (f.session.kind==="rest" ? "rest" : "zone2");
   const doneTxt = f.session.kind==="rest" ? (te.trained?"✓ Regeneracja odhaczona":"Oznacz regenerację")
